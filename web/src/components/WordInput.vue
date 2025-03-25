@@ -49,9 +49,11 @@ const addWords = () => {
   // 清空输入框
   manualInput.value = ''
 }
+// .env文件加载BASERUL
+const baseApiUrl = import.meta.env.VITE_BASE_API_URL
 
 // API基础路径
-const baseApiUrl = 'http://127.0.0.1:9988/v1/api/learning';
+const apiUrl = baseApiUrl + '/api/learning';
 
 // 上传图片并识别单词
 const uploadImage = (file: File) => {
