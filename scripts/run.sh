@@ -47,14 +47,14 @@ echo -e "${YELLOW}使用端口配置: Web=${WEB_PORT}, API=${API_PORT}${NC}"
 
 # 检查环境文件是否存在
 echo "检查环境文件..."
-if [ ! -f "../api/.env-api-copy" ] || [ ! -f "../web/.env-web-copy" ]; then
+if [ ! -f ".env-api-copy" ] || [ ! -f ".env-web-copy" ]; then
   echo -e "${RED}错误: 环境文件不存在!${NC}"
   exit 1
 fi
 
 echo -e "${GREEN}复制环境文件...${NC}"
-cp ../api/.env-api-copy ../api/.env
-cp ../web/.env-web-copy ../web/.env
+cp .env-api-copy ../api/.env
+cp .env-web-copy ../web/.env
 
 # 检查并移除已存在的容器
 echo "检查是否有已存在的容器..."
