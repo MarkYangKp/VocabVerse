@@ -88,7 +88,7 @@ const uploadImage = (file: File) => {
   formData.append('image', file)
   
   // 发送API请求
-  fetch(`${baseApiUrl}/upload_image`, {
+  fetch(`${apiUrl}/upload_image`, {
     method: 'POST',
     body: formData
   })
