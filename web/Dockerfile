@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install -g cnpm --registry=https://registry.npmmirror.com && cnpm install
+RUN npm install --registry=https://registry.npmmirror.com
 # RUN npm install
 
 COPY . .
