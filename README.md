@@ -87,6 +87,10 @@ VocabVerse（词境）是一个基于大语言模型（LLM）的英语词汇学�
       SILICONFLOW_API_KEY= # SiliconFlow 的 API 密钥，用于身份验证
       SILICONFLOW_BASE_URL= # SiliconFlow 的 API 请求基础 URL
       SILICONFLOW_MODEL= # 使用的 SiliconFlow 模型名称，根据实际需求填写
+
+      # Gemini 相关配置
+      GEMINI_API_KEY= # Gemini 的 API 密钥，用于身份验证
+      GEMINI_MODEL=  # 使用的 Gemini 模型名称，例如 gemini-2.5
       ```
 
    2. 创建虚拟环境并激活
