@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { ArrowLeft, ArrowRight, Check, Refresh, CircleCheckFilled, CircleCloseFilled, InfoFilled } from '@element-plus/icons-vue'
+import { ref } from 'vue'
+import { Check, Refresh, CircleCheckFilled, CircleCloseFilled, InfoFilled } from '@element-plus/icons-vue'
 
 // 定义问题数据接口
 interface Question {
@@ -17,57 +17,16 @@ const props = defineProps<{
   questionData: Question[]
 }>()
 
-// 当前正在查看的问题索引
-const currentQuestionIndex = ref(0)
-
-// 用户选择的答案，修改为 key 为 string
+// 用户选择的答案
 const userAnswers = ref<Record<string, string>>({})
 
 // 是否显示答案和解释
 const showAnswers = ref(false)
 
-// 计算当前问题
-const currentQuestion = computed(() => {
-  if (!props.questionData || props.questionData.length === 0) {
-    return null
-  }
-  return props.questionData[currentQuestionIndex.value] || null
-})
-
-// 计算总问题数
-const totalQuestions = computed(() => {
-  return props.questionData?.length || 0
-})
-
-// 检查是否是第一个问题
-const isFirstQuestion = computed(() => {
-  return currentQuestionIndex.value === 0
-})
-
-// 检查是否是最后一个问题
-const isLastQuestion = computed(() => {
-  return currentQuestionIndex.value === totalQuestions.value - 1
-})
-
-// 前往上一个问题
-const goToPrevQuestion = () => {
-  if (!isFirstQuestion.value) {
-    currentQuestionIndex.value--
-  }
-}
-
-// 前往下一个问题
-const goToNextQuestion = () => {
-  if (!isLastQuestion.value) {
-    currentQuestionIndex.value++
-  }
-}
-
 // 选择答案
-const selectAnswer = (option: string) => {
+const selectAnswer = (questionIndex: number, option: string) => {
   if (showAnswers.value) return // 如果已经显示答案，不允许更改
-  
-  userAnswers.value[currentQuestionIndex.value.toString()] = option
+  userAnswers.value[questionIndex.toString()] = option
 }
 
 // 提交答案并查看解释
@@ -79,20 +38,19 @@ const submitAnswers = () => {
 const resetQuiz = () => {
   userAnswers.value = {}
   showAnswers.value = false
-  currentQuestionIndex.value = 0
 }
 
 // 计算选项样式
-const getOptionClass = (option: string) => {
+const getOptionClass = (questionIndex: number, option: string) => {
   if (!showAnswers.value) {
     return {
-      'selected': userAnswers.value[currentQuestionIndex.value.toString()] === option,
+      'selected': userAnswers.value[questionIndex.toString()] === option,
       'disabled': false
     }
   }
   
-  const isUserSelected = userAnswers.value[currentQuestionIndex.value.toString()] === option
-  const isCorrect = currentQuestion.value?.answer === option
+  const isUserSelected = userAnswers.value[questionIndex.toString()] === option
+  const isCorrect = props.questionData[questionIndex].answer === option
   
   return {
     'selected': isUserSelected,
@@ -105,99 +63,68 @@ const getOptionClass = (option: string) => {
 
 <template>
   <div v-if="questionData && questionData.length > 0" class="question-display">
-    <!-- 问题导航 -->
-    <div class="question-nav">
-      <div class="progress-card">
-        <div class="progress-info">
-          <el-progress 
-            type="circle" 
-            :percentage="Math.round(((currentQuestionIndex + 1) / totalQuestions) * 100)" 
-            :width="60"
-            :stroke-width="8"
-            :show-text="false"
-          />
-          <div class="progress-text">
-            <div class="progress-count">{{ currentQuestionIndex + 1 }}/{{ totalQuestions }}</div>
-            <div class="progress-label">问题</div>
-          </div>
+    <!-- 所有问题列表 -->
+    <div class="questions-list">
+      <div v-for="(question, index) in questionData" :key="index" class="question-card">
+        <div class="question-header">
+          <div class="question-number">问题 {{ index + 1 }}</div>
+          <div class="question-text">{{ question.question }}</div>
         </div>
-        <div class="nav-buttons">
-          <el-button 
-            type="primary" 
-            :icon="ArrowLeft"
-            circle
-            :disabled="isFirstQuestion" 
-            @click="goToPrevQuestion"
-          />
-          <el-button 
-            type="primary" 
-            :icon="ArrowRight"
-            circle
-            :disabled="isLastQuestion" 
-            @click="goToNextQuestion"
-          />
-        </div>
-      </div>
-    </div>
-    
-    <!-- 当前问题 -->
-    <div v-if="currentQuestion" class="question-card">
-      <div class="question-text">{{ currentQuestion.question }}</div>
-      
-      <div class="options-list">
-        <!-- 修改：将遍历变量更名为 key -->
-        <div 
-          v-for="(text, key) in currentQuestion.option" 
-          :key="key"
-          class="option-card"
-          :class="getOptionClass(key)"
-          @click="selectAnswer(key)"
-        >
-          <div class="option-content">
-            <div class="option-label">{{ key }}</div>
-            <div class="option-text">{{ text }}</div>
-          </div>
-          <div class="option-indicator">
-            <el-icon v-if="showAnswers && currentQuestion.answer === key"><CircleCheckFilled /></el-icon>
-            <el-icon v-else-if="showAnswers && userAnswers[currentQuestionIndex] === key"><CircleCloseFilled /></el-icon>
-          </div>
-        </div>
-      </div>
-      
-      <!-- 答案解释 -->
-      <transition name="fade">
-        <div v-if="showAnswers" class="answer-explanation">
-          <el-divider>
-            <div class="divider-content">
-              <el-icon><InfoFilled /></el-icon>
-              <span>答案解释</span>
+        
+        <div class="options-list">
+          <div 
+            v-for="(text, key) in question.option" 
+            :key="key"
+            class="option-card"
+            :class="getOptionClass(index, key)"
+            @click="selectAnswer(index, key)"
+          >
+            <div class="option-content">
+              <div class="option-label">{{ key }}</div>
+              <div class="option-text">{{ text }}</div>
             </div>
-          </el-divider>
-          
-          <div v-if="userAnswers[currentQuestionIndex] === currentQuestion.answer" class="result-card correct">
-            <el-icon><CircleCheckFilled /></el-icon>
-            <span>回答正确!</span>
-          </div>
-          <div v-else-if="userAnswers[currentQuestionIndex]" class="result-card incorrect">
-            <el-icon><CircleCloseFilled /></el-icon>
-            <span>
-              回答错误! 正确答案是: 
-              <strong>{{ currentQuestion.answer }}</strong>
-            </span>
-          </div>
-          
-          <div class="explanation-box">
-            <el-tabs tab-position="top" type="border-card">
-              <el-tab-pane label="中文解析">
-                <div class="explanation-content">{{ currentQuestion.explanation.chinese_exp }}</div>
-              </el-tab-pane>
-              <el-tab-pane label="英文解析">
-                <div class="explanation-content">{{ currentQuestion.explanation.english_exp }}</div>
-              </el-tab-pane>
-            </el-tabs>
+            <div class="option-indicator">
+              <el-icon v-if="showAnswers && question.answer === key"><CircleCheckFilled /></el-icon>
+              <el-icon v-else-if="showAnswers && userAnswers[index] === key"><CircleCloseFilled /></el-icon>
+            </div>
           </div>
         </div>
-      </transition>
+        
+        <!-- 答案解释 -->
+        <transition name="fade">
+          <div v-if="showAnswers" class="answer-explanation">
+            <el-divider>
+              <div class="divider-content">
+                <el-icon><InfoFilled /></el-icon>
+                <span>答案解释</span>
+              </div>
+            </el-divider>
+            
+            <div v-if="userAnswers[index] === question.answer" class="result-card correct">
+              <el-icon><CircleCheckFilled /></el-icon>
+              <span>回答正确!</span>
+            </div>
+            <div v-else-if="userAnswers[index]" class="result-card incorrect">
+              <el-icon><CircleCloseFilled /></el-icon>
+              <span>
+                回答错误! 正确答案是: 
+                <strong>{{ question.answer }}</strong>
+              </span>
+            </div>
+            
+            <div class="explanation-box">
+              <el-tabs tab-position="top" type="border-card">
+                <el-tab-pane label="中文解析">
+                  <div class="explanation-content">{{ question.explanation.chinese_exp }}</div>
+                </el-tab-pane>
+                <el-tab-pane label="英文解析">
+                  <div class="explanation-content">{{ question.explanation.english_exp }}</div>
+                </el-tab-pane>
+              </el-tabs>
+            </div>
+          </div>
+        </transition>
+      </div>
     </div>
     
     <!-- 底部按钮 -->
@@ -206,7 +133,7 @@ const getOptionClass = (option: string) => {
         v-if="!showAnswers" 
         type="primary" 
         @click="submitAnswers"
-        :disabled="Object.keys(userAnswers).length < totalQuestions"
+        :disabled="Object.keys(userAnswers).length < questionData.length"
         size="large"
         class="action-button"
       >
@@ -239,52 +166,29 @@ const getOptionClass = (option: string) => {
   padding: 10px;
 }
 
-.question-nav {
-  margin-bottom: 24px;
-}
-
-.progress-card {
+.questions-list {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: linear-gradient(145deg, #f8f9fa, #eef2f8);
-  border-radius: 12px;
-  padding: 16px 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
+  flex-direction: column;
+  gap: 32px;
+  max-width: 800px;
+  margin: 0 auto;
+  padding-bottom: 32px;
 }
 
-.progress-card:hover {
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
-}
-
-.progress-info {
+.question-header {
   display: flex;
   align-items: center;
   gap: 16px;
+  margin-bottom: 16px;
 }
 
-.progress-text {
-  display: flex;
-  flex-direction: column;
-}
-
-.progress-count {
-  font-size: 20px;
+.question-number {
+  font-size: 16px;
   font-weight: 600;
   color: #409EFF;
-  line-height: 1;
-}
-
-.progress-label {
-  font-size: 14px;
-  color: #909399;
-  margin-top: 4px;
-}
-
-.nav-buttons {
-  display: flex;
-  gap: 12px;
+  background-color: rgba(64, 158, 255, 0.1);
+  padding: 6px 12px;
+  border-radius: 20px;
 }
 
 .question-card {
