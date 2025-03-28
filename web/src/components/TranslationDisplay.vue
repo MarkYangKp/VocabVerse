@@ -12,15 +12,25 @@ const props = defineProps({
 
 const languagePoints = ref<{ word: string, explanation: string }[]>([])
 const translation = ref('')
+// 新增: 使用 Map 跟踪每个单词的显示/隐藏状态
+const wordVisibility = ref(new Map<string, boolean>())
 
 // 监听传入的数据并更新组件状态
 watch(() => props.translationData, (newData) => {
   if (newData) {
     languagePoints.value = newData.language_points || []
     translation.value = newData.translation || ''
+    
+    // 初始化单词可见性状态，默认全部隐藏
+    const newWordVisibility = new Map<string, boolean>()
+    languagePoints.value.forEach(point => {
+      newWordVisibility.set(point.word, false)
+    })
+    wordVisibility.value = newWordVisibility
   } else {
     languagePoints.value = []
     translation.value = ''
+    wordVisibility.value = new Map<string, boolean>()
   }
 }, { immediate: true, deep: true })
 
@@ -39,6 +49,29 @@ const copyTranslation = () => {
       })
   }
 }
+
+// 当前选中的单词
+const currentWord = ref('')
+
+// 处理单词点击，记忆最后点击的单词
+const handleWordClick = (word: string) => {
+  currentWord.value = word
+}
+
+// 新增: 切换单词解释的显示/隐藏状态
+const toggleWordExplanation = (word: string, event: Event) => {
+  // 阻止冒泡，避免触发外层的点击事件
+  event.stopPropagation()
+  
+  // 切换显示状态
+  const currentVisibility = wordVisibility.value.get(word) || false
+  wordVisibility.value.set(word, !currentVisibility)
+}
+
+// 新增: 判断单词解释是否显示
+const isWordExplanationVisible = (word: string): boolean => {
+  return wordVisibility.value.get(word) || false
+}
 </script>
 
 <template>
@@ -50,26 +83,41 @@ const copyTranslation = () => {
           <el-icon><Collection /></el-icon>
           <span>单词解释</span>
         </h3>
+        <div class="section-actions" v-if="languagePoints.length">
+          <el-tooltip content="点击单词展开/收起解释" placement="top">
+            <el-button type="info" plain size="small" circle>
+              <el-icon><InfoFilled /></el-icon>
+            </el-button>
+          </el-tooltip>
+        </div>
       </div>
       
       <template v-if="languagePoints.length">
         <div class="words-list">
-          <el-collapse accordion>
-            <el-collapse-item 
-              v-for="point in languagePoints" 
+          <el-row :gutter="16">
+            <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="8" 
+              v-for="point in languagePoints"
               :key="point.word"
             >
-              <template #title>
-                <div class="word-title">
-                  <span class="word-text">{{ point.word }}</span>
-                  <el-tag size="small" effect="plain" class="word-tag">词汇</el-tag>
+              <div class="word-card" 
+                :class="{ 'active-word': currentWord === point.word }"
+                @click="handleWordClick(point.word)"
+              >
+                <div class="word-header" @click="toggleWordExplanation(point.word, $event)">
+                  <div class="word-text">{{ point.word }}</div>
+                  <div class="word-actions">
+                    <el-tag size="small" effect="light" class="word-tag">词汇</el-tag>
+                    <el-icon class="toggle-icon" :class="{ 'is-expanded': isWordExplanationVisible(point.word) }">
+                      <ArrowDown />
+                    </el-icon>
+                  </div>
                 </div>
-              </template>
-              <div class="word-explanation-card">
-                <div class="explanation-content">{{ point.explanation }}</div>
+                <div class="word-content" v-show="isWordExplanationVisible(point.word)">
+                  <div class="explanation-content">{{ point.explanation }}</div>
+                </div>
               </div>
-            </el-collapse-item>
-          </el-collapse>
+            </el-col>
+          </el-row>
         </div>
       </template>
       
@@ -129,7 +177,7 @@ const copyTranslation = () => {
 
 .translation-section {
   margin-bottom: 32px;
-  transition: all 0.3s ease;
+  transition: var(--transition-normal, all 0.3s ease);
 }
 
 .section-header {
@@ -149,12 +197,17 @@ const copyTranslation = () => {
 }
 
 .section-header .el-icon {
-  color: #409EFF;
+  color: var(--primary-color, #409EFF);
+}
+
+.section-actions {
+  display: flex;
+  gap: 10px;
 }
 
 .copy-btn {
-  transition: all 0.2s ease;
-  border-radius: 8px;
+  transition: var(--transition-fast, all 0.2s ease);
+  border-radius: var(--border-radius-sm, 8px);
 }
 
 .copy-btn:hover {
@@ -163,37 +216,75 @@ const copyTranslation = () => {
 }
 
 .words-list {
-  border-radius: 12px;
+  border-radius: var(--border-radius-md, 12px);
   overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
-.word-title {
+.word-card {
+  background-color: #fff;
+  border-radius: var(--border-radius-sm, 8px);
+  overflow: hidden;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  transition: var(--transition-normal, all 0.3s ease);
+  cursor: pointer;
+  border: 1px solid #eaeefb;
+}
+
+.word-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  border-color: rgba(64, 158, 255, 0.3);
+}
+
+.active-word {
+  border-color: var(--primary-color, #409EFF);
+  box-shadow: 0 6px 16px rgba(64, 158, 255, 0.15);
+}
+
+.word-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  padding: 16px;
-  gap: 10px;
+  padding: 12px 16px;
+  background: linear-gradient(to right, #f0f7ff, #e6f0ff);
+  border-bottom: 1px solid rgba(64, 158, 255, 0.1);
+  cursor: pointer;
 }
 
 .word-text {
-  font-weight: 500;
+  font-weight: 600;
   font-size: 16px;
-  color: #303133;
+  color: var(--primary-color, #409EFF);
+}
+
+.word-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .word-tag {
-  color: #409EFF;
+  color: var(--primary-color, #409EFF);
   font-size: 12px;
 }
 
-.word-explanation-card {
-  background: linear-gradient(to right, #f8f9fa, #eef2f8);
-  border-radius: 8px;
+.toggle-icon {
+  transition: transform 0.3s ease;
+  color: #909399;
+}
+
+.toggle-icon.is-expanded {
+  transform: rotate(180deg);
+}
+
+.word-content {
+  padding: 16px;
   overflow: hidden;
+  transition: max-height 0.3s ease;
 }
 
 .explanation-content {
-  padding: 16px;
   line-height: 1.8;
   color: #303133;
   font-size: 15px;
@@ -201,10 +292,10 @@ const copyTranslation = () => {
 
 .translation-content-card {
   background-color: #fff;
-  border-radius: 12px;
+  border-radius: var(--border-radius-md, 12px);
   padding: 24px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-  transition: all 0.3s ease;
+  box-shadow: var(--card-shadow, 0 4px 16px rgba(0, 0, 0, 0.06));
+  transition: var(--transition-normal, all 0.3s ease);
   min-height: 200px;
 }
 
@@ -214,15 +305,32 @@ const copyTranslation = () => {
 
 .translation-text {
   line-height: 1.8;
-  white-space: pre-wrap;
   color: #303133;
   font-size: 15px;
+}
+
+.translation-text :deep(p) {
+  margin-bottom: 16px;
+}
+
+.translation-text :deep(strong) {
+  color: var(--primary-color, #409EFF);
+  font-weight: 600;
+}
+
+.translation-text :deep(h1),
+.translation-text :deep(h2),
+.translation-text :deep(h3),
+.translation-text :deep(h4) {
+  margin-top: 1.5em;
+  margin-bottom: 0.8em;
+  color: #303133;
 }
 
 .empty-card {
   padding: 24px;
   background-color: #f9fafc;
-  border-radius: 12px;
+  border-radius: var(--border-radius-md, 12px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
@@ -247,9 +355,9 @@ const copyTranslation = () => {
 
 .loading-card {
   padding: 24px;
-  border-radius: 12px;
+  border-radius: var(--border-radius-md, 12px);
   background-color: #fff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--card-shadow, 0 4px 16px rgba(0, 0, 0, 0.06));
 }
 
 .loading-card.top {
@@ -296,7 +404,7 @@ const copyTranslation = () => {
   }
   
   .translation-content-card:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--card-shadow, 0 4px 16px rgba(0, 0, 0, 0.06));
     transform: none;
   }
   
@@ -312,6 +420,11 @@ const copyTranslation = () => {
   .empty-card {
     padding: 16px;
   }
+  
+  .word-card:hover {
+    transform: none;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  }
 }
 
 @media (max-width: 576px) {
@@ -319,12 +432,15 @@ const copyTranslation = () => {
     margin-bottom: 20px;
   }
   
-  .word-explanation-card {
-    background: #f8f9fa;
+  .word-header {
+    padding: 10px 12px;
+  }
+  
+  .word-content {
+    padding: 12px;
   }
   
   .explanation-content {
-    padding: 12px;
     font-size: 14px;
     line-height: 1.6;
   }
