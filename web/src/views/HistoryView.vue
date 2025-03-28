@@ -145,7 +145,9 @@ onMounted(() => {
 
 <template>
   <div class="history-container">
-    <el-container>
+    <div class="page-background"></div>
+    <el-container class="main-container">
+      <!-- 顶部导航栏 -->
       <el-header height="auto" class="history-header">
         <div class="header-content">
           <div class="logo-area" @click="goBack">
@@ -158,8 +160,10 @@ onMounted(() => {
         </div>
       </el-header>
       
+      <!-- 主要内容区域 -->
       <el-main>
         <div class="history-content">
+          <!-- 搜索和操作区域 -->
           <div class="history-actions">
             <el-input
               v-model="searchQuery"
@@ -185,10 +189,12 @@ onMounted(() => {
             </div>
           </div>
           
+          <!-- 加载状态 -->
           <div v-if="isLoading" class="loading-state">
             <el-skeleton :rows="10" animated />
           </div>
           
+          <!-- 空记录状态 -->
           <div v-else-if="records.length === 0" class="empty-history">
             <el-empty description="暂无学习历史记录">
               <template #image>
@@ -198,6 +204,7 @@ onMounted(() => {
             </el-empty>
           </div>
           
+          <!-- 搜索无结果状态 -->
           <div v-else-if="filteredRecords.length === 0" class="empty-search">
             <el-empty description="没有找到匹配的记录">
               <template #image>
@@ -206,6 +213,7 @@ onMounted(() => {
             </el-empty>
           </div>
           
+          <!-- 记录列表 -->
           <div v-else class="records-list">
             <el-card
               v-for="record in filteredRecords"
@@ -213,8 +221,12 @@ onMounted(() => {
               class="record-card"
               shadow="hover"
             >
+              <!-- 记录头部 -->
               <div class="record-header">
-                <div class="record-timestamp">{{ formatDate(record.timestamp) }}</div>
+                <div class="record-timestamp">
+                  <el-icon><Clock /></el-icon>
+                  {{ formatDate(record.timestamp) }}
+                </div>
                 <div class="record-actions">
                   <el-button 
                     type="danger" 
@@ -228,7 +240,9 @@ onMounted(() => {
                 </div>
               </div>
               
+              <!-- 记录内容 -->
               <div class="record-content" @click="viewRecordDetail(record)">
+                <!-- 记录信息 -->
                 <div class="record-info">
                   <div class="info-item">
                     <el-icon><Reading /></el-icon>
@@ -244,33 +258,37 @@ onMounted(() => {
                   </div>
                 </div>
                 
+                <!-- 单词标签 -->
                 <div class="record-words">
                   <el-tag 
                     v-for="(word, index) in record.words.slice(0, 8)" 
                     :key="word+index"
                     size="small"
                     class="word-tag"
+                    effect="light"
                   >
                     {{ word }}
                   </el-tag>
-                  <el-tag v-if="record.words.length > 8" size="small" type="info">
+                  <el-tag v-if="record.words.length > 8" size="small" type="info" effect="plain">
                     +{{ record.words.length - 8 }} 个单词
                   </el-tag>
                 </div>
                 
+                <!-- 文章预览 -->
                 <div class="record-preview">
                   {{ record.article.article.substring(0, 100) }}...
                 </div>
                 
+                <!-- 功能标签 -->
                 <div class="record-features">
-                  <el-tag size="small" type="success" effect="plain">
+                  <el-tag size="small" type="success" effect="dark">
                     <el-icon><Document /></el-icon>
                     文章
                   </el-tag>
                   <el-tag 
                     size="small" 
                     :type="record.translation ? 'success' : 'info'" 
-                    effect="plain"
+                    :effect="record.translation ? 'dark' : 'plain'"
                   >
                     <el-icon><Connection /></el-icon>
                     翻译 {{ record.translation ? '✓' : '✗' }}
@@ -278,7 +296,7 @@ onMounted(() => {
                   <el-tag 
                     size="small" 
                     :type="record.questions ? 'success' : 'info'" 
-                    effect="plain"
+                    :effect="record.questions ? 'dark' : 'plain'"
                   >
                     <el-icon><QuestionFilled /></el-icon>
                     练习题 {{ record.questions ? '✓' : '✗' }}
@@ -290,6 +308,7 @@ onMounted(() => {
         </div>
       </el-main>
       
+      <!-- 页脚 -->
       <el-footer class="app-footer">
         <div class="footer-content">
           <p>
@@ -303,15 +322,35 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* 全局容器样式 */
 .history-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4e7ed 100%);
+  position: relative;
+  overflow: hidden;
 }
 
+/* 背景效果 */
+.page-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #f0f4f8 0%, #d7e3f0 100%);
+  z-index: -1;
+}
+
+.main-container {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+
+/* 顶部导航栏样式 */
 .history-header {
   padding: 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  background: linear-gradient(90deg, #409EFF 0%, #53a8ff 100%);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  background: linear-gradient(90deg, #3a7bd5 0%, #00d2ff 100%);
   position: relative;
   overflow: hidden;
 }
@@ -323,9 +362,16 @@ onMounted(() => {
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+  background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%);
   opacity: 0.6;
   pointer-events: none;
+  animation: pulse 15s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
 
 .header-content {
@@ -342,7 +388,7 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
 }
 
 .logo-area:hover {
@@ -352,6 +398,7 @@ onMounted(() => {
 .logo-icon {
   font-size: 28px;
   color: #fff;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
 .history-header h1 {
@@ -360,21 +407,25 @@ onMounted(() => {
   font-size: 28px;
   font-weight: 600;
   letter-spacing: 1px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .header-title h2 {
   margin: 10px 0 0;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.95);
   font-size: 18px;
   font-weight: normal;
+  letter-spacing: 0.5px;
 }
 
+/* 主内容区域样式 */
 .history-content {
   max-width: 1000px;
   margin: 0 auto;
-  padding: 20px 16px;
+  padding: 24px 16px;
 }
 
+/* 搜索和操作区域样式 */
 .history-actions {
   display: flex;
   justify-content: space-between;
@@ -382,6 +433,11 @@ onMounted(() => {
   margin-bottom: 24px;
   flex-wrap: wrap;
   gap: 16px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .search-input {
@@ -389,56 +445,96 @@ onMounted(() => {
   width: 100%;
 }
 
+.search-input :deep(.el-input__wrapper) {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
 .action-buttons {
   display: flex;
   gap: 12px;
 }
 
+.action-buttons .el-button {
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.action-buttons .el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 状态显示区域样式 */
 .loading-state,
 .empty-history,
 .empty-search {
-  background-color: #fff;
-  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
   padding: 40px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(10px);
 }
 
 .empty-icon {
   font-size: 48px;
-  color: #c0c4cc;
+  color: #a0a8b8;
+  margin-bottom: 16px;
 }
 
+/* 记录列表样式 */
 .records-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
 }
 
 .record-card {
-  border-radius: 10px;
+  border-radius: 16px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border: none;
 }
 
 .record-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+  transform: translateY(-5px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
 }
 
+.record-card :deep(.el-card__body) {
+  padding: 20px;
+}
+
+/* 记录头部样式 */
 .record-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .record-timestamp {
-  color: #909399;
+  color: #606a78;
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
+.record-actions .el-button {
+  transition: all 0.3s ease;
+}
+
+.record-actions .el-button:hover {
+  transform: rotate(15deg);
+}
+
+/* 记录内容样式 */
 .record-content {
   cursor: pointer;
 }
@@ -446,7 +542,7 @@ onMounted(() => {
 .record-info {
   display: flex;
   gap: 16px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
   flex-wrap: wrap;
 }
 
@@ -454,47 +550,79 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #606266;
+  color: #4a5568;
+  background: rgba(0, 0, 0, 0.03);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
 }
 
 .info-item .el-icon {
-  color: #409EFF;
+  color: #3a7bd5;
 }
 
+/* 单词标签样式 */
 .record-words {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 14px;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
 .word-tag {
-  background-color: #f0f2f5;
-  margin: 3px 0;
+  border-radius: 6px;
+  margin: 0;
+  transition: all 0.3s ease;
+  font-weight: 500;
 }
 
+.word-tag:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 文章预览样式 */
 .record-preview {
-  color: #606266;
+  color: #4a5568;
   font-size: 14px;
   line-height: 1.6;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  background: rgba(0, 0, 0, 0.02);
+  padding: 12px;
+  border-radius: 8px;
+  border-left: 3px solid #3a7bd5;
 }
 
+/* 功能标签样式 */
 .record-features {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
+.record-features .el-tag {
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.3s ease;
+}
+
+.record-features .el-tag:hover {
+  transform: translateY(-2px);
+}
+
+/* 页脚样式 */
 .app-footer {
   padding: 24px;
-  background-color: #fff;
-  border-top: 1px solid #e4e7ed;
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
   margin-top: auto;
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.03);
 }
@@ -509,18 +637,24 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #909399;
+  color: #606a78;
   margin: 0;
+  font-size: 14px;
 }
 
 .footer-content .el-icon {
-  color: #409EFF;
+  color: #3a7bd5;
 }
 
-/* 增强响应式布局 */
+/* 响应式布局 */
 @media (max-width: 992px) {
   .history-content {
     padding: 16px;
+  }
+  
+  .records-list {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
   }
   
   .loading-state,
@@ -556,6 +690,7 @@ onMounted(() => {
     align-items: stretch;
     gap: 12px;
     margin-bottom: 20px;
+    padding: 12px;
   }
   
   .search-input {
@@ -564,6 +699,10 @@ onMounted(() => {
   
   .action-buttons {
     justify-content: space-between;
+  }
+  
+  .records-list {
+    grid-template-columns: 1fr;
   }
   
   .loading-state,
@@ -577,11 +716,11 @@ onMounted(() => {
   }
   
   .record-card:hover {
-    transform: translateY(-2px);
+    transform: translateY(-3px);
   }
   
   .record-info {
-    gap: 12px;
+    gap: 10px;
   }
   
   .record-preview {
@@ -599,7 +738,11 @@ onMounted(() => {
   }
   
   .history-content {
-    padding: 12px;
+    padding: 12px 8px;
+  }
+  
+  .history-actions {
+    padding: 10px;
   }
   
   .action-buttons {
@@ -607,22 +750,28 @@ onMounted(() => {
     gap: 10px;
   }
   
+  .record-card {
+    border-radius: 12px;
+  }
+  
   .record-card:hover {
-    transform: none;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
   }
   
   .record-header {
-    margin-bottom: 10px;
-    padding-bottom: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
   }
   
   .info-item {
-    font-size: 13px;
+    font-size: 12px;
+    padding: 4px 8px;
   }
   
   .record-preview {
     font-size: 13px;
+    padding: 10px;
   }
   
   .empty-icon {
