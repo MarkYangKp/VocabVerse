@@ -44,6 +44,10 @@ const baseApiUrl = import.meta.env.VITE_API_BASE_URL
 // API基础路径
 const apiUrl = baseApiUrl+'/api/learning';
 
+// 优化视觉反馈
+const isGenerating = ref(false)
+const loadingText = ref('')
+
 // 生成文章
 const generateArticle = async () => {
   if (wordList.value.length === 0) {
@@ -51,11 +55,8 @@ const generateArticle = async () => {
     return
   }
 
-  const loading = ElLoading.service({
-    lock: true,
-    text: '正在生成文章，请稍候...',
-    background: 'rgba(255, 255, 255, 0.7)'
-  })
+  isGenerating.value = true
+  loadingText.value = '正在生成文章，请稍候...'
 
   try {
     const response = await fetch(`${apiUrl}/word2passage`, {
@@ -94,15 +95,20 @@ const generateArticle = async () => {
       article: { ...articleData.value }
     });
 
-    // 生成文章后自动在后台获取翻译和问题数据
-    getTranslation();
-    getQuestions();
+    // 自动获取翻译和问题
+    loadingText.value = '文章已生成，正在获取更多内容...'
+    setTimeout(() => {
+      getTranslation();
+      getQuestions();
+    }, 300);
 
   } catch (error) {
     console.error('生成文章失败:', error);
     ElMessage.error('生成文章失败，请稍后再试');
   } finally {
-    loading.close();
+    setTimeout(() => {
+      isGenerating.value = false;
+    }, 500);
   }
 }
 
@@ -277,10 +283,10 @@ const viewHistory = () => {
         <div class="header-content">
           <div class="logo-area">
             <el-icon class="logo-icon"><Connection /></el-icon>
-            <h1>词境——每个单词都值得一个故事</h1>
+            <h1>词境</h1>
           </div>
           <div class="header-description">
-            <p>输入单词，AI智能生成记忆文章</p>
+            <p>每个单词都值得一个故事</p>
           </div>
           <div class="header-actions">
             <el-button type="primary" plain round @click="viewHistory">
@@ -352,9 +358,16 @@ const viewHistory = () => {
                     </el-form-item>
                     
                     <el-form-item>
-                      <el-button type="primary" @click="generateArticle" class="generate-btn">
-                        <el-icon><MagicStick /></el-icon>
-                        生成英文文章
+                      <el-button 
+                        type="primary" 
+                        @click="generateArticle" 
+                        class="generate-btn"
+                        :loading="isGenerating"
+                        :disabled="wordList.length === 0 || isGenerating"
+                      >
+                        <el-icon v-if="!isGenerating"><MagicStick /></el-icon>
+                        <span v-if="!isGenerating">生成英文文章</span>
+                        <span v-else>{{ loadingText }}</span>
                       </el-button>
                     </el-form-item>
                   </el-form>
@@ -366,14 +379,14 @@ const viewHistory = () => {
           <!-- 右侧：内容显示区域 -->
           <el-col :xs="24" :sm="24" :md="16" :lg="17" :xl="18" class="right-col">
             <div class="right-panel">
-              <transition name="fade">
+              <transition name="fade-scale">
                 <el-card v-if="!articleGenerated" class="empty-state-card" shadow="hover">
                   <div class="empty-state">
                     <div class="empty-icon-wrapper">
                       <el-icon class="empty-icon"><DocumentAdd /></el-icon>
                     </div>
-                    <h3>尚未生成英文文章</h3>
-                    <p>请在左侧输入单词并配置文章生成选项，然后点击"生成英文文章"按钮</p>
+                    <h3>等待生成英文文章</h3>
+                    <p>完成左侧的配置后点击"生成英文文章"按钮开始创建</p>
                     <div class="empty-steps">
                       <div class="step">
                         <div class="step-number">1</div>
@@ -391,35 +404,42 @@ const viewHistory = () => {
                       </div>
                       <div class="step">
                         <div class="step-number">3</div>
-                        <div class="step-text">生成英文文章</div>
+                        <div class="step-text">生成文章</div>
                       </div>
                     </div>
                   </div>
                 </el-card>
               </transition>
               
-              <transition name="fade">
+              <transition name="fade-scale">
                 <div v-if="articleGenerated" class="content-tabs-container">
                   <el-tabs 
                     v-model="activeTab" 
                     type="border-card" 
                     class="content-tabs"
+                    stretch
                     @tab-click="(tab: any) => {
                       if (tab.paneName === 'translation' && !translationData) getTranslation();
                       if (tab.paneName === 'questions' && !questionData) getQuestions();
                     }"
                   >
                     <el-tab-pane label="文章阅读" name="article">
-                      <ArticleDisplay :article-data="articleData" />
+                      <div class="tab-content-wrapper">
+                        <ArticleDisplay :article-data="articleData" />
+                      </div>
                     </el-tab-pane>
-                    
-                    <el-tab-pane label="翻译和解释" name="translation">
-                      <TranslationDisplay :translation-data="translationData" />
-                    </el-tab-pane>
-                    
                     <el-tab-pane label="练习题" name="questions">
-                      <QuestionDisplay :question-data="questionData" />
+                      <div class="tab-content-wrapper">
+                        <QuestionDisplay :question-data="questionData" />
+                      </div>
+                    </el-tab-pane> 
+                    <el-tab-pane label="翻译和解释" name="translation">
+                      <div class="tab-content-wrapper">
+                        <TranslationDisplay :translation-data="translationData" />
+                      </div>
                     </el-tab-pane>
+                    
+                    
                   </el-tabs>
                 </div>
               </transition>
@@ -432,7 +452,7 @@ const viewHistory = () => {
         <div class="footer-content">
           <p>
             <el-icon><Connection /></el-icon>
-            Word2LLM - 使用AI增强英语学习体验
+            词境 - 使用AI增强英语学习体验
           </p>
         </div>
       </el-footer>
@@ -478,7 +498,7 @@ const viewHistory = () => {
 }
 
 .header-content {
-  padding: 24px;
+  padding: 20px;
   text-align: center;
   position: relative;
   z-index: 1;
@@ -523,7 +543,6 @@ const viewHistory = () => {
 }
 
 .main-content {
-  /* max-width: 1440px; */
   margin: 0 auto;
 }
 
@@ -550,6 +569,7 @@ const viewHistory = () => {
 
 .word-input-card:hover {
   transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
 .panel-header {
@@ -596,9 +616,14 @@ const viewHistory = () => {
   letter-spacing: 1px;
 }
 
-.generate-btn:hover {
+.generate-btn:hover:not(:disabled) {
   transform: translateY(-3px);
   box-shadow: 0 8px 15px rgba(64, 158, 255, 0.3);
+}
+
+.generate-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .empty-state-card {
@@ -606,6 +631,8 @@ const viewHistory = () => {
   width: 100%;
   border-radius: 12px;
   transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
 }
 
 .empty-state {
@@ -623,9 +650,10 @@ const viewHistory = () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(145deg, #f0f2f5, #e6e9ec);
+  background: linear-gradient(135deg, #f0f7ff, #e6f0ff);
   border-radius: 50%;
   margin-bottom: 24px;
+  box-shadow: 0 8px 16px rgba(64, 158, 255, 0.15);
 }
 
 .empty-state .empty-icon {
@@ -635,13 +663,13 @@ const viewHistory = () => {
 
 .empty-state h3 {
   font-weight: 600;
-  font-size: 18px;
+  font-size: 20px;
   margin: 0 0 12px;
   color: #303133;
 }
 
 .empty-state p {
-  color: #909399;
+  color: #606266;
   max-width: 400px;
   margin: 0 0 32px;
   line-height: 1.6;
@@ -658,11 +686,16 @@ const viewHistory = () => {
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  transition: all 0.3s;
+}
+
+.step:hover {
+  transform: translateY(-4px);
 }
 
 .step-number {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background-color: #409EFF;
   color: #fff;
@@ -670,12 +703,14 @@ const viewHistory = () => {
   justify-content: center;
   align-items: center;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 18px;
+  box-shadow: 0 4px 10px rgba(64, 158, 255, 0.3);
 }
 
 .step-text {
-  color: #606266;
+  color: #303133;
   font-size: 14px;
+  font-weight: 500;
 }
 
 .step-arrow {
@@ -695,8 +730,12 @@ const viewHistory = () => {
   background-color: #fff;
 }
 
+.tab-content-wrapper {
+  padding: 16px 0;
+}
+
 .app-footer {
-  padding: 24px;
+  padding: 20px;
   background-color: #fff;
   border-top: 1px solid #e4e7ed;
   margin-top: auto;
@@ -725,19 +764,19 @@ const viewHistory = () => {
   width: 100%;
 }
 
-/* 过渡动画 */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.5s ease, transform 0.5s ease;
+/* 更优雅的过渡动画 */
+.fade-scale-enter-active,
+.fade-scale-leave-active {
+  transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.fade-enter-from,
-.fade-leave-to {
+.fade-scale-enter-from,
+.fade-scale-leave-to {
   opacity: 0;
-  transform: translateY(20px);
+  transform: scale(0.95) translateY(20px);
 }
 
-/* 响应式布局调整 */
+/* 响应式布局优化 */
 @media (max-width: 992px) {
   .empty-state {
     padding: 40px 15px;
@@ -750,6 +789,11 @@ const viewHistory = () => {
   
   .empty-state .empty-icon {
     font-size: 35px;
+  }
+  
+  .generate-btn {
+    height: 44px;
+    font-size: 15px;
   }
 }
 
@@ -768,7 +812,7 @@ const viewHistory = () => {
   
   .empty-steps {
     flex-direction: column;
-    gap: 12px;
+    gap: 20px;
   }
   
   .step-arrow {
@@ -785,6 +829,16 @@ const viewHistory = () => {
   
   .word-input-card:hover {
     transform: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+  
+  .generate-btn:hover:not(:disabled) {
+    transform: none;
+    box-shadow: none;
+  }
+  
+  .tab-content-wrapper {
+    padding: 8px 0;
   }
 }
 
@@ -798,7 +852,7 @@ const viewHistory = () => {
   }
   
   .empty-state h3 {
-    font-size: 16px;
+    font-size: 18px;
   }
   
   .empty-state p {
@@ -806,16 +860,20 @@ const viewHistory = () => {
   }
   
   .step-number {
-    width: 30px;
-    height: 30px;
-    font-size: 14px;
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
   }
   
   .step-text {
-    font-size: 12px;
+    font-size: 13px;
   }
   
   .footer-content p {
+    font-size: 13px;
+  }
+  
+  .divider-content {
     font-size: 13px;
   }
 }
