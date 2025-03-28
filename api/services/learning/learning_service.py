@@ -9,7 +9,7 @@ class WordServices:
     def __init__(self):
         self.llm_manager = LLM_Manager()
         # 默认使用OPENAI提供商，也可从配置文件读取
-        self.llm = self.llm_manager.creatLLM(llm_Settings.LLM_PROVIDER)
+        # self.llm = self.llm_manager.creatLLM(llm_Settings.LLM_PROVIDER)
     
     def generate_passage(self, words: List[str], passage_needs: int, passage_type: int, word_num: str) -> Dict[str, Any]:
         """根据单词生成文章"""
@@ -37,9 +37,9 @@ class WordServices:
             passage_type=pt_str,
             word_num=word_num
         )
-        
-        self.llm.setPrompt("你是一个英文写作助手")
-        response = self.llm.ChatToBot(prompt)
+        llm = self.llm_manager.creatLLM(llm_Settings.LLM_PROVIDER)
+        llm.setPrompt("你是一个文章生成助手")
+        response = llm.ChatToBot(prompt) 
         
         result = text_to_json(response)
         if not result:
@@ -55,8 +55,9 @@ class WordServices:
         prompt_template = PromptTemplate(WORD2TRANSLATION, {})
         prompt = prompt_template.render(words=words_str, passage=passage)
         
-        self.llm.setPrompt("你是一个文章生成解释和翻译助手")
-        response = self.llm.ChatToBot(prompt)
+        llm = self.llm_manager.creatLLM(llm_Settings.LLM_PROVIDER)
+        llm.setPrompt("你是一个翻译助手")
+        response = llm.ChatToBot(prompt)
         
         result = text_to_json(response)
         if not result:
@@ -71,19 +72,35 @@ class WordServices:
         prompt_template = PromptTemplate(PASSAGE2QUESTION, {})
         prompt = prompt_template.render(words=words_str, passage=passage, difficulty=difficulty)
         
-        self.llm.setPrompt("你是一个为文章生成问题助手")
-        response = self.llm.ChatToBot(prompt)
+        llm = self.llm_manager.creatLLM(llm_Settings.LLM_PROVIDER)
+        llm.setPrompt("你是一个问题生成助手")
+        response = llm.ChatToBot(prompt)
         
         result = text_to_json(response)
         if not result:
+            print("解析JSON失败，返回空列表")
             return []
         
         # 确保返回的是列表
-        if isinstance(result, dict) and "questions" in result:
-            return result["questions"]
+        if isinstance(result, dict):
+            if "questions" in result:
+                # 如果是包含questions键的字典，返回其值
+                return result["questions"]
+            else:
+                # 如果是其他字典格式，记录并返回空列表
+                print(f"生成问题返回不支持的字典格式: {result.keys()}")
+                return []
         
         # 如果已经是列表，直接返回
         if isinstance(result, list):
+            # 验证列表中的每个元素是否符合预期格式
+            for item in result:
+                if not isinstance(item, dict):
+                    print(f"列表中包含非字典元素: {type(item)}")
+                    return []
+                if not all(key in item for key in ["question", "answer", "option", "explanation"]):
+                    print(f"列表中的字典缺少必要键: {item.keys()}")
+                    return []
             return result
             
         # 如果是其他格式，返回空列表

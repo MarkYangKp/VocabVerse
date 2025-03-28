@@ -47,8 +47,19 @@ def passage2question(request: Passage2QuestionRequest):
         # 确保返回的是列表
         if isinstance(questions, dict) and "questions" in questions:
             return questions["questions"]
-        
-        return questions
+        elif isinstance(questions, list):
+            # 验证每个问题项是否符合QuestionItem模型
+            for item in questions:
+                if not all(key in item for key in ["question", "answer", "option", "explanation"]):
+                    raise HTTPException(status_code=500, detail="生成的问题格式不正确，请重试")
+                if not all(key in item["option"] for key in ["A", "B", "C", "D"]):
+                    raise HTTPException(status_code=500, detail="生成的选项格式不正确，请重试")
+                if not all(key in item["explanation"] for key in ["chinese_exp", "english_exp"]):
+                    raise HTTPException(status_code=500, detail="生成的解释格式不正确，请重试")
+            return questions
+        else:
+            # 如果是其他格式，抛出异常
+            raise HTTPException(status_code=500, detail="生成问题返回不支持的格式，请重试")
     except HTTPException as e:
         raise e
     except Exception as e:
