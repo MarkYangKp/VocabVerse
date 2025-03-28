@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     SILICONFLOW_BASE_URL:str
     SILICONFLOW_MODEL:str
 
+    GEMINI_API_KEY:str
+    GEMINI_MODEL:str
     class Config:
         env_file = ".env"
         extra = 'allow'

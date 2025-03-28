@@ -3,6 +3,7 @@ from .openaillm import OpenAILLM
 from .deepseek import DeepSeek_LLM
 from .llm import LLM
 from .siliconflow import SiliconFlowLLM
+from .geminillm import GeminiLLM
 class LLM_Provider(Enum):
     """
     Types of LLM Providers.
@@ -10,6 +11,7 @@ class LLM_Provider(Enum):
     OPENAI = "OPENAI"
     DEEPSEEK = "DEEPSEEK"
     SILICONFLOW = "SILICONFLOW"
+    GEMINI = "GEMINI"
 
     @classmethod
     def get_llm(cls, mode_provider: str):
@@ -28,6 +30,8 @@ class LLM_Manager:
             return OpenAILLM()
         elif lLM_Provider == LLM_Provider.SILICONFLOW:
             return SiliconFlowLLM()
+        elif lLM_Provider == LLM_Provider.GEMINI:
+            return GeminiLLM()
         else:
             raise Exception("Not supported mode_provider type")
         
