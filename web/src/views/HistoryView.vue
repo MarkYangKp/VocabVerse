@@ -10,6 +10,9 @@ const records = ref<LearningRecord[]>([])
 const searchQuery = ref('')
 const isLoading = ref(true)
 
+// 排序方式
+const sortOrder = ref('newest')
+
 // 获取并格式化日期
 const formatDate = (timestamp: number) => {
   const date = new Date(timestamp)
@@ -40,6 +43,33 @@ const filteredRecords = computed(() => {
     
     return wordsMatch || articleMatch
   })
+})
+
+// 根据排序方式返回排序后的记录
+const sortedRecords = computed(() => {
+  const filtered = filteredRecords.value
+  
+  if (sortOrder.value === 'newest') {
+    return [...filtered].sort((a, b) => b.timestamp - a.timestamp)
+  } else if (sortOrder.value === 'oldest') {
+    return [...filtered].sort((a, b) => a.timestamp - b.timestamp)
+  } else if (sortOrder.value === 'wordsMore') {
+    return [...filtered].sort((a, b) => b.words.length - a.words.length)
+  } else if (sortOrder.value === 'wordsLess') {
+    return [...filtered].sort((a, b) => a.words.length - b.words.length)
+  }
+  
+  return filtered
+})
+
+// 记录分组信息
+const recordStats = computed(() => {
+  return {
+    total: records.value.length,
+    withTranslation: records.value.filter(r => r.translation).length,
+    withQuestions: records.value.filter(r => r.questions).length,
+    totalWords: [...new Set(records.value.flatMap(r => r.words))].length
+  }
 })
 
 // 加载历史记录
@@ -150,12 +180,20 @@ onMounted(() => {
       <!-- 顶部导航栏 -->
       <el-header height="auto" class="history-header">
         <div class="header-content">
-          <div class="logo-area" @click="goBack">
-            <el-icon class="logo-icon"><Connection /></el-icon>
-            <h1>Word2LLM</h1>
+          <div class="header-left">
+            <div class="logo-area" @click="goBack">
+              <el-icon class="logo-icon"><Connection /></el-icon>
+              <h1>词境</h1>
+            </div>
           </div>
-          <div class="header-title">
+          <div class="header-center">
             <h2>学习历史记录</h2>
+          </div>
+          <div class="header-right">
+            <el-button type="primary" plain @click="goBack">
+              <el-icon><Back /></el-icon>
+              返回主页
+            </el-button>
           </div>
         </div>
       </el-header>
@@ -165,27 +203,56 @@ onMounted(() => {
         <div class="history-content">
           <!-- 搜索和操作区域 -->
           <div class="history-actions">
-            <el-input
-              v-model="searchQuery"
-              placeholder="搜索单词或文章内容"
-              clearable
-              class="search-input"
-            >
-              <template #prefix>
-                <el-icon><Search /></el-icon>
-              </template>
-            </el-input>
+            <div class="action-left">
+              <el-input
+                v-model="searchQuery"
+                placeholder="搜索单词或文章内容"
+                clearable
+                class="search-input"
+              >
+                <template #prefix>
+                  <el-icon><Search /></el-icon>
+                </template>
+              </el-input>
+            </div>
             
-            <div class="action-buttons">
+            <div class="action-center" v-if="records.length > 0">
+              <el-radio-group v-model="sortOrder" size="small" class="sort-options">
+                <el-radio-button label="newest">最新优先</el-radio-button>
+                <el-radio-button label="oldest">最早优先</el-radio-button>
+                <el-radio-button label="wordsMore">单词数多</el-radio-button>
+                <el-radio-button label="wordsLess">单词数少</el-radio-button>
+              </el-radio-group>
+            </div>
+            
+            <div class="action-right">
               <el-button type="danger" @click="confirmClearAllRecords" :disabled="records.length === 0">
                 <el-icon><Delete /></el-icon>
                 清空记录
               </el-button>
-              
-              <el-button type="primary" @click="goBack">
-                <el-icon><Back /></el-icon>
-                返回首页
-              </el-button>
+            </div>
+          </div>
+          
+          <!-- 统计信息卡片 -->
+          <div v-if="records.length > 0" class="stats-card">
+            <div class="stat-item">
+              <div class="stat-value">{{ recordStats.total }}</div>
+              <div class="stat-label">学习记录</div>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+              <div class="stat-value">{{ recordStats.totalWords }}</div>
+              <div class="stat-label">不同单词</div>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+              <div class="stat-value">{{ recordStats.withTranslation }}</div>
+              <div class="stat-label">含翻译解析</div>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+              <div class="stat-value">{{ recordStats.withQuestions }}</div>
+              <div class="stat-label">含练习题</div>
             </div>
           </div>
           
@@ -200,7 +267,7 @@ onMounted(() => {
               <template #image>
                 <el-icon class="empty-icon"><Calendar /></el-icon>
               </template>
-              <el-button type="primary" @click="goBack">返回首页开始学习</el-button>
+              <el-button type="primary" @click="goBack" round>返回首页开始学习</el-button>
             </el-empty>
           </div>
           
@@ -210,13 +277,16 @@ onMounted(() => {
               <template #image>
                 <el-icon class="empty-icon"><Search /></el-icon>
               </template>
+              <el-button @click="searchQuery = ''" size="small" type="primary" plain>
+                清除搜索
+              </el-button>
             </el-empty>
           </div>
           
           <!-- 记录列表 -->
           <div v-else class="records-list">
             <el-card
-              v-for="record in filteredRecords"
+              v-for="record in sortedRecords"
               :key="record.id"
               class="record-card"
               shadow="hover"
@@ -265,7 +335,7 @@ onMounted(() => {
                     :key="word+index"
                     size="small"
                     class="word-tag"
-                    effect="light"
+                    effect="plain"
                   >
                     {{ word }}
                   </el-tag>
@@ -276,7 +346,7 @@ onMounted(() => {
                 
                 <!-- 文章预览 -->
                 <div class="record-preview">
-                  {{ record.article.article.substring(0, 100) }}...
+                  {{ record.article.article.substring(0, 80) }}...
                 </div>
                 
                 <!-- 功能标签 -->
@@ -302,6 +372,11 @@ onMounted(() => {
                     练习题 {{ record.questions ? '✓' : '✗' }}
                   </el-tag>
                 </div>
+                
+                <div class="view-details">
+                  <el-icon><Right /></el-icon>
+                  <span>查看详情</span>
+                </div>
               </div>
             </el-card>
           </div>
@@ -313,7 +388,7 @@ onMounted(() => {
         <div class="footer-content">
           <p>
             <el-icon><Connection /></el-icon>
-            Word2LLM - 使用AI增强英语学习体验
+            词境 - 使用AI增强英语学习体验
           </p>
         </div>
       </el-footer>
@@ -375,12 +450,21 @@ onMounted(() => {
 }
 
 .header-content {
-  padding: 20px;
+  padding: 16px 24px;
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
   position: relative;
   z-index: 1;
+}
+
+.header-left, .header-right {
+  flex: 1;
+}
+
+.header-right {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .logo-area {
@@ -388,7 +472,7 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: var(--transition-normal);
 }
 
 .logo-area:hover {
@@ -396,7 +480,7 @@ onMounted(() => {
 }
 
 .logo-icon {
-  font-size: 28px;
+  font-size: 24px;
   color: #fff;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
@@ -404,23 +488,24 @@ onMounted(() => {
 .history-header h1 {
   margin: 0;
   color: #fff;
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 600;
   letter-spacing: 1px;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.header-title h2 {
-  margin: 10px 0 0;
+.header-center h2 {
+  margin: 0;
   color: rgba(255, 255, 255, 0.95);
   font-size: 18px;
   font-weight: normal;
   letter-spacing: 0.5px;
+  text-align: center;
 }
 
 /* 主内容区域样式 */
 .history-content {
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 24px 16px;
 }
@@ -435,9 +520,14 @@ onMounted(() => {
   gap: 16px;
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(10px);
-  border-radius: 12px;
+  border-radius: var(--border-radius-md);
   padding: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--card-shadow);
+}
+
+.action-left, .action-right, .action-center {
+  display: flex;
+  align-items: center;
 }
 
 .search-input {
@@ -446,23 +536,60 @@ onMounted(() => {
 }
 
 .search-input :deep(.el-input__wrapper) {
-  border-radius: 8px;
+  border-radius: var(--border-radius-sm);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.action-buttons {
-  display: flex;
-  gap: 12px;
+.sort-options {
+  margin: 0 auto;
 }
 
-.action-buttons .el-button {
-  border-radius: 8px;
-  transition: all 0.3s ease;
+.action-right .el-button {
+  border-radius: var(--border-radius-sm);
+  transition: var(--transition-normal);
 }
 
-.action-buttons .el-button:hover {
+.action-right .el-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 统计卡片样式 */
+.stats-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: var(--border-radius-md);
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.stat-divider {
+  width: 1px;
+  height: 40px;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #606266;
 }
 
 /* 状态显示区域样式 */
@@ -470,7 +597,7 @@ onMounted(() => {
 .empty-history,
 .empty-search {
   background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 16px;
+  border-radius: var(--border-radius-lg);
   padding: 40px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
   backdrop-filter: blur(10px);
@@ -485,18 +612,19 @@ onMounted(() => {
 /* 记录列表样式 */
 .records-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 20px;
 }
 
 .record-card {
-  border-radius: 16px;
+  border-radius: var(--border-radius-lg);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: var(--transition-normal);
   overflow: hidden;
   background-color: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(10px);
   border: none;
+  height: 100%;
 }
 
 .record-card:hover {
@@ -506,6 +634,9 @@ onMounted(() => {
 
 .record-card :deep(.el-card__body) {
   padding: 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 /* 记录头部样式 */
@@ -527,7 +658,7 @@ onMounted(() => {
 }
 
 .record-actions .el-button {
-  transition: all 0.3s ease;
+  transition: var(--transition-normal);
 }
 
 .record-actions .el-button:hover {
@@ -537,11 +668,14 @@ onMounted(() => {
 /* 记录内容样式 */
 .record-content {
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .record-info {
   display: flex;
-  gap: 16px;
+  gap: 10px;
   margin-bottom: 16px;
   flex-wrap: wrap;
 }
@@ -572,8 +706,7 @@ onMounted(() => {
 .word-tag {
   border-radius: 6px;
   margin: 0;
-  transition: all 0.3s ease;
-  font-weight: 500;
+  transition: var(--transition-normal);
 }
 
 .word-tag:hover {
@@ -596,6 +729,7 @@ onMounted(() => {
   padding: 12px;
   border-radius: 8px;
   border-left: 3px solid #3a7bd5;
+  flex: 1;
 }
 
 /* 功能标签样式 */
@@ -603,6 +737,7 @@ onMounted(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  margin-bottom: 16px;
 }
 
 .record-features .el-tag {
@@ -610,21 +745,40 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
-  transition: all 0.3s ease;
+  transition: var(--transition-normal);
 }
 
 .record-features .el-tag:hover {
   transform: translateY(-2px);
 }
 
+/* 查看详情按钮 */
+.view-details {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  color: var(--primary-color);
+  font-size: 14px;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(64, 158, 255, 0.1);
+  transition: var(--transition-normal);
+  margin-top: auto;
+}
+
+.record-card:hover .view-details {
+  background: rgba(64, 158, 255, 0.2);
+}
+
 /* 页脚样式 */
 .app-footer {
-  padding: 24px;
+  padding: 20px;
   background-color: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(10px);
   border-top: 1px solid rgba(0, 0, 0, 0.05);
   margin-top: auto;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--footer-shadow);
 }
 
 .footer-content {
@@ -653,7 +807,7 @@ onMounted(() => {
   }
   
   .records-list {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 16px;
   }
   
@@ -662,73 +816,77 @@ onMounted(() => {
   .empty-search {
     padding: 30px;
   }
-}
-
-@media (max-width: 768px) {
-  .history-header {
-    padding: 0;
-  }
   
-  .header-content {
+  .stats-card {
     padding: 16px;
   }
   
+  .stat-value {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+  }
+  
+  .header-left, .header-right {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .header-right {
+    margin-top: 8px;
+  }
+  
   .logo-icon {
-    font-size: 24px;
+    font-size: 20px;
   }
   
   .history-header h1 {
-    font-size: 24px;
-  }
-  
-  .header-title h2 {
-    font-size: 16px;
+    font-size: 20px;
   }
   
   .history-actions {
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
-    margin-bottom: 20px;
-    padding: 12px;
   }
   
   .search-input {
     max-width: 100%;
   }
   
-  .action-buttons {
-    justify-content: space-between;
+  .action-center {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .action-right {
+    order: 2;
+    justify-content: flex-end;
+  }
+  
+  .stats-card {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  
+  .stat-divider {
+    display: none;
+  }
+  
+  .stat-item {
+    width: 50%;
+    flex: none;
   }
   
   .records-list {
     grid-template-columns: 1fr;
-  }
-  
-  .loading-state,
-  .empty-history,
-  .empty-search {
-    padding: 24px;
-  }
-  
-  .empty-icon {
-    font-size: 40px;
-  }
-  
-  .record-card:hover {
-    transform: translateY(-3px);
-  }
-  
-  .record-info {
-    gap: 10px;
-  }
-  
-  .record-preview {
-    -webkit-line-clamp: 3;
-  }
-  
-  .app-footer {
-    padding: 16px;
   }
 }
 
@@ -737,21 +895,30 @@ onMounted(() => {
     transform: none;
   }
   
+  .header-center h2 {
+    font-size: 16px;
+  }
+  
   .history-content {
     padding: 12px 8px;
   }
   
-  .history-actions {
-    padding: 10px;
+  .history-actions,
+  .stats-card {
+    padding: 12px;
+    border-radius: 10px;
   }
   
-  .action-buttons {
-    flex-direction: column;
-    gap: 10px;
+  .stat-value {
+    font-size: 18px;
+  }
+  
+  .stat-label {
+    font-size: 12px;
   }
   
   .record-card {
-    border-radius: 12px;
+    border-radius: 10px;
   }
   
   .record-card:hover {
@@ -759,14 +926,9 @@ onMounted(() => {
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
   }
   
-  .record-header {
-    margin-bottom: 12px;
-    padding-bottom: 10px;
-  }
-  
   .info-item {
-    font-size: 12px;
     padding: 4px 8px;
+    font-size: 12px;
   }
   
   .record-preview {
@@ -774,12 +936,28 @@ onMounted(() => {
     padding: 10px;
   }
   
+  .view-details {
+    font-size: 12px;
+    padding: 6px;
+  }
+  
   .empty-icon {
     font-size: 36px;
   }
   
+  .loading-state,
+  .empty-history,
+  .empty-search {
+    padding: 24px;
+    border-radius: 10px;
+  }
+  
+  .app-footer {
+    padding: 16px;
+  }
+  
   .footer-content p {
-    font-size: 13px;
+    font-size: 12px;
   }
 }
 </style>
