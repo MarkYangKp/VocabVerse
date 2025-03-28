@@ -12,7 +12,7 @@ const route = useRoute()
 const router = useRouter()
 const recordId = computed(() => route.query.id as string)
 const record = ref<LearningRecord | null>(null)
-const activeTab = ref('article')
+const activeTab = ref(route.query.tab?.toString() || 'article')
 const isLoading = ref(true)
 
 // 格式化日期
@@ -27,6 +27,12 @@ const formatDate = (timestamp: number) => {
     second: '2-digit'
   })
 }
+
+// 页面标题计算属性
+const pageTitle = computed(() => {
+  if (!record.value) return '学习记录详情'
+  return `学习记录 - ${formatDate(record.value.timestamp)}`
+})
 
 // 加载记录详情
 const loadRecord = () => {
@@ -75,10 +81,16 @@ onMounted(() => {
         <div class="header-content">
           <div class="logo-area" @click="goHome">
             <el-icon class="logo-icon"><Connection /></el-icon>
-            <h1>Word2LLM</h1>
+            <h1>词境</h1>
           </div>
           <div class="header-title">
-            <h2>学习记录详情</h2>
+            <h2>{{ pageTitle }}</h2>
+          </div>
+          <div class="header-actions">
+            <el-button type="primary" plain @click="goBack">
+              <el-icon><Back /></el-icon>
+              返回历史
+            </el-button>
           </div>
         </div>
       </el-header>
@@ -90,15 +102,21 @@ onMounted(() => {
         
         <div v-else-if="record" class="record-detail-content">
           <div class="record-meta-card">
-            <el-descriptions title="记录信息" :column="3" border>
+            <el-descriptions :column="3" border>
+              <template #title>
+                <div class="meta-title">
+                  <el-icon><DataAnalysis /></el-icon>
+                  <span>记录信息</span>
+                </div>
+              </template>
               <el-descriptions-item label="创建时间">
-                {{ formatDate(record.timestamp) }}
+                <el-tag type="info" effect="plain">{{ formatDate(record.timestamp) }}</el-tag>
               </el-descriptions-item>
               <el-descriptions-item label="单词数量">
-                {{ record.words.length }} 个单词
+                <el-tag type="primary" effect="plain">{{ record.words.length }} 个单词</el-tag>
               </el-descriptions-item>
               <el-descriptions-item label="文章字数">
-                {{ record.article.word_count }} 字
+                <el-tag type="success" effect="plain">{{ record.article.word_count }} 字</el-tag>
               </el-descriptions-item>
             </el-descriptions>
             
@@ -119,35 +137,42 @@ onMounted(() => {
                 </el-tag>
               </div>
             </div>
-            
-            <div class="record-actions">
-              <el-button type="primary" @click="goBack">
-                <el-icon><Back /></el-icon>
-                返回历史记录
-              </el-button>
-            </div>
           </div>
           
           <div class="content-tabs-container">
-            <el-tabs v-model="activeTab" type="border-card" class="content-tabs">
+            <el-tabs 
+              v-model="activeTab" 
+              type="border-card" 
+              class="content-tabs"
+              stretch
+            >
               <el-tab-pane label="文章阅读" name="article">
-                <ArticleDisplay :article-data="record.article" />
+                <div class="tab-content-wrapper">
+                  <ArticleDisplay :article-data="record.article" />
+                </div>
               </el-tab-pane>
               
               <el-tab-pane label="翻译和解释" name="translation">
-                <TranslationDisplay :translation-data="record.translation" />
+                <div class="tab-content-wrapper">
+                  <TranslationDisplay :translation-data="record.translation" />
+                </div>
               </el-tab-pane>
               
               <el-tab-pane label="练习题" name="questions">
-                <div v-if="record.questions">
-                  <QuestionDisplay :question-data="record.questions" />
-                </div>
-                <div v-else class="feature-unavailable">
-                  <el-empty description="该记录没有练习题数据">
-                    <template #image>
-                      <el-icon class="empty-icon"><QuestionFilled /></el-icon>
-                    </template>
-                  </el-empty>
+                <div class="tab-content-wrapper">
+                  <div v-if="record.questions">
+                    <QuestionDisplay :question-data="record.questions" />
+                  </div>
+                  <div v-else class="feature-unavailable">
+                    <el-empty description="该记录没有练习题数据">
+                      <template #image>
+                        <el-icon class="empty-icon"><QuestionFilled /></el-icon>
+                      </template>
+                      <el-button type="primary" plain round size="small">
+                        返回文章阅读
+                      </el-button>
+                    </el-empty>
+                  </div>
                 </div>
               </el-tab-pane>
             </el-tabs>
@@ -159,7 +184,7 @@ onMounted(() => {
         <div class="footer-content">
           <p>
             <el-icon><Connection /></el-icon>
-            Word2LLM - 使用AI增强英语学习体验
+            词境 Word2LLM - 使用AI增强英语学习体验
           </p>
         </div>
       </el-footer>
@@ -194,10 +219,10 @@ onMounted(() => {
 }
 
 .header-content {
-  padding: 20px;
+  padding: 16px 24px;
   display: flex;
-  flex-direction: column;
   align-items: center;
+  justify-content: space-between;
   position: relative;
   z-index: 1;
 }
@@ -215,23 +240,28 @@ onMounted(() => {
 }
 
 .logo-icon {
-  font-size: 28px;
+  font-size: 24px;
   color: #fff;
 }
 
 .record-header h1 {
   margin: 0;
   color: #fff;
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 600;
   letter-spacing: 1px;
 }
 
 .header-title h2 {
-  margin: 10px 0 0;
+  margin: 0;
   color: rgba(255, 255, 255, 0.9);
-  font-size: 18px;
+  font-size: 16px;
   font-weight: normal;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
 }
 
 .record-detail-content {
@@ -248,6 +278,18 @@ onMounted(() => {
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.meta-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #303133;
+  font-weight: 600;
+}
+
+.meta-title .el-icon {
+  color: #409EFF;
 }
 
 .word-list-display {
@@ -271,17 +313,20 @@ onMounted(() => {
 .word-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
+  background: #f9fafc;
+  padding: 16px;
+  border-radius: 8px;
 }
 
 .word-tag {
   margin: 0;
+  transition: all 0.2s;
 }
 
-.record-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 24px;
+.word-tag:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .content-tabs-container {
@@ -295,8 +340,13 @@ onMounted(() => {
   background-color: #fff;
 }
 
+.tab-content-wrapper {
+  padding: 16px 0;
+}
+
 .feature-unavailable {
   padding: 40px;
+  text-align: center;
 }
 
 .empty-icon {
@@ -312,7 +362,7 @@ onMounted(() => {
 }
 
 .app-footer {
-  padding: 24px;
+  padding: 20px;
   background-color: #fff;
   border-top: 1px solid #e4e7ed;
   margin-top: auto;
@@ -338,12 +388,62 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+    gap: 12px;
+  }
+  
+  .header-title {
+    text-align: center;
+  }
+  
   .record-meta-card {
     padding: 16px;
   }
   
   .word-tags {
+    padding: 12px;
     gap: 6px;
+  }
+  
+  .tab-content-wrapper {
+    padding: 8px 0;
+  }
+  
+  .feature-unavailable {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 576px) {
+  .record-header h1 {
+    font-size: 20px;
+  }
+  
+  .header-title h2 {
+    font-size: 14px;
+  }
+  
+  .section-title {
+    font-size: 15px;
+  }
+  
+  .word-tags {
+    padding: 10px;
+  }
+  
+  .word-tag {
+    font-size: 12px;
+  }
+  
+  .empty-icon {
+    font-size: 36px;
+  }
+  
+  .feature-unavailable {
+    padding: 16px;
   }
 }
 </style>
