@@ -185,6 +185,7 @@ const getOptionClass = (questionIndex: number, option: string) => {
 .question-number {
   font-size: 16px;
   font-weight: 600;
+  width: auto;
   color: #409EFF;
   background-color: rgba(64, 158, 255, 0.1);
   padding: 6px 12px;
@@ -206,6 +207,7 @@ const getOptionClass = (questionIndex: number, option: string) => {
 .question-text {
   font-size: 18px;
   font-weight: 600;
+  max-width: 600px;
   margin-bottom: 24px;
   line-height: 1.6;
   color: #303133;
