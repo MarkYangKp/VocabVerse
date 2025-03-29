@@ -72,6 +72,11 @@ const toggleWordExplanation = (word: string, event: Event) => {
 const isWordExplanationVisible = (word: string): boolean => {
   return wordVisibility.value.get(word) || false
 }
+
+// 新增: 渲染单词解释为HTML
+const renderExplanation = (explanation: string) => {
+  return marked(explanation || '')
+}
 </script>
 
 <template>
@@ -113,7 +118,7 @@ const isWordExplanationVisible = (word: string): boolean => {
                   </div>
                 </div>
                 <div class="word-content" v-show="isWordExplanationVisible(point.word)">
-                  <div class="explanation-content">{{ point.explanation }}</div>
+                  <div class="explanation-content" v-html="renderExplanation(point.explanation)"></div>
                 </div>
               </div>
             </el-col>
@@ -452,5 +457,32 @@ const isWordExplanationVisible = (word: string): boolean => {
   .loading-card {
     padding: 16px;
   }
+}
+
+.explanation-content :deep(p) {
+  margin-bottom: 12px;
+}
+
+.explanation-content :deep(strong) {
+  color: var(--primary-color, #409EFF);
+  font-weight: 600;
+}
+
+.explanation-content :deep(code) {
+  background-color: #f8f8f8;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-family: monospace;
+  color: #e6a23c;
+}
+
+.explanation-content :deep(ul), 
+.explanation-content :deep(ol) {
+  padding-left: 20px;
+  margin-bottom: 12px;
+}
+
+.explanation-content :deep(li) {
+  margin-bottom: 4px;
 }
 </style>
