@@ -88,7 +88,7 @@ class TopicArea(str, Enum):
 
 # 请求模型
 class Word2PassageRequest(BaseModel):
-    words: conlist(str, max_items=50)  # 限制最多50个单词
+    words: conlist(str, max_length=50)  # 限制最多50个单词
     # 保留旧参数，但标记为已弃用
     passage_needs: Optional[int] = Field(None, ge=1, le=5)  # 限制范围1-5
     passage_type: Optional[int] = Field(None, ge=1, le=11)  # 限制范围1-11
@@ -127,7 +127,7 @@ class Word2PassageRequest(BaseModel):
         return v
 
 class Passage2QuestionRequest(BaseModel):
-    words: conlist(str, max_items=50)  # 限制最多50个单词
+    words: conlist(str, max_length=50)  # 限制最多50个单词
     passage: str = Field(..., max_length=10000)  # 限制最大长度
     difficulty: QuestionDifficulty = QuestionDifficulty.MEDIUM  # 使用枚举
     
@@ -145,7 +145,7 @@ class Passage2QuestionRequest(BaseModel):
         return v
 
 class Passage2ExplanationRequest(BaseModel):
-    words: conlist(str, max_items=50)  # 限制最多50个单词
+    words: conlist(str, max_length=50)  # 限制最多50个单词
     passage: str = Field(..., max_length=10000)  # 限制最大长度
     
     # 验证器
