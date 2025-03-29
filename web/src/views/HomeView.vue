@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { ElMessage, ElLoading } from 'element-plus'
 import { useRouter } from 'vue-router'
 import WordInput from '@/components/WordInput.vue'
@@ -51,6 +51,9 @@ const questionData = ref<any>(null)
 const activeTab = ref('article')
 const recordId = ref<number | null>(null)
 
+// 高级设置显示开关
+const showAdvancedSettings = ref(false)
+
 // 获取路由器实例
 const router = useRouter()
 
@@ -67,6 +70,97 @@ const apiUrl = baseApiUrl ? baseApiUrl + '/v1/api/learning' : 'http://localhost:
 // 优化视觉反馈
 const isGenerating = ref(false)
 const loadingText = ref('')
+
+// 根据新接口定义枚举选项
+const articleTypeOptions = [
+  { value: 'news', label: '新闻' },
+  { value: 'short_story', label: '短篇故事' },
+  { value: 'science', label: '科普文章' },
+  { value: 'blog', label: '博客/观点文' },
+  { value: 'academic', label: '学术论文' },
+  { value: 'email', label: '电子邮件/信件' },
+  { value: 'dialogue', label: '对话体' },
+  { value: 'argumentative', label: '议论文' },
+  { value: 'narrative', label: '叙事文' },
+  { value: 'descriptive', label: '描写文' },
+  { value: 'business', label: '商业报告' },
+  { value: 'technical', label: '技术报告' },
+  { value: 'editorial', label: '社论' },
+  { value: 'social_media', label: '社交媒体文案' }
+]
+
+const difficultyLevelOptions = [
+  { value: 'a1', label: 'CEFR A1 (初级)' },
+  { value: 'a2', label: 'CEFR A2' },
+  { value: 'b1', label: 'CEFR B1' },
+  { value: 'b2', label: 'CEFR B2' },
+  { value: 'c1', label: 'CEFR C1' },
+  { value: 'c2', label: 'CEFR C2' },
+  { value: 'easy', label: '简单' },
+  { value: 'intermediate', label: '中等' },
+  { value: 'advanced', label: '高级' },
+  { value: 'high_school', label: '高中水平' },
+  { value: 'cet4', label: '四级难度' },
+  { value: 'cet6', label: '六级难度' },
+  { value: 'graduate', label: '考研难度' },
+  { value: 'memory_friendly', label: '易于记忆' }
+]
+
+const toneStyleOptions = [
+  { value: 'formal', label: '正式' },
+  { value: 'semi_formal', label: '半正式' },
+  { value: 'informal', label: '非正式/口语化' },
+  { value: 'humorous', label: '幽默/轻松' },
+  { value: 'academic', label: '学术严谨' },
+  { value: 'business', label: '商务' },
+  { value: 'conversational', label: '对话式' },
+  { value: 'technical', label: '技术性' },
+  { value: 'professional', label: '专业' }
+]
+
+const articleLengthOptions = [
+  { value: 'short', label: '短篇(100-200词)' },
+  { value: 'medium', label: '中篇(300-500词)' },
+  { value: 'long', label: '长篇(600-1000词)' },
+  { value: 'custom', label: '自定义' }
+]
+
+const topicOptions = [
+  { value: 'general', label: '一般/通用' },
+  { value: 'technology', label: '科技' },
+  { value: 'business', label: '商业' },
+  { value: 'health', label: '健康' },
+  { value: 'science', label: '科学' },
+  { value: 'education', label: '教育' },
+  { value: 'environment', label: '环境' },
+  { value: 'entertainment', label: '娱乐' },
+  { value: 'sports', label: '体育' },
+  { value: 'politics', label: '政治' },
+  { value: 'culture', label: '文化' },
+  { value: 'history', label: '历史' },
+  { value: 'travel', label: '旅游' },
+  { value: 'food', label: '美食' },
+  { value: 'fashion', label: '时尚' },
+  { value: 'art', label: '艺术' },
+  { value: 'literature', label: '文学' },
+  { value: 'economics', label: '经济' },
+  { value: 'philosophy', label: '哲学' },
+  { value: 'psychology', label: '心理学' }
+]
+
+// 辅助计算属性：是否显示自定义字数输入框
+const showCustomWordCount = computed(() => {
+  return config.article_length === 'custom'
+})
+
+// 当旧参数更改时，同步到新参数
+watch(() => config.passageNeeds, (newValue) => {
+  syncPassageNeeds(newValue)
+})
+
+watch(() => config.passageType, (newValue) => {
+  syncPassageType(newValue)
+})
 
 // 生成文章
 const generateArticle = async () => {
@@ -395,39 +489,102 @@ const viewHistory = () => {
                   </div>
                   
                   <el-form label-position="top" size="default" class="config-form">
-                    <el-form-item label="文章难度">
-                      <el-select v-model="config.passageNeeds" placeholder="选择难度" class="w-100">
-                        <el-option :value="1" label="考研难度" />
-                        <el-option :value="2" label="六级难度" />
-                        <el-option :value="3" label="易于记忆" />
-                        <el-option :value="4" label="四级难度" />
-                        <el-option :value="5" label="高中水平" />
-                      </el-select>
-                    </el-form-item>
-                    
+                    <!-- 基础配置 -->
                     <el-form-item label="文章类型">
-                      <el-select v-model="config.passageType" placeholder="选择类型" class="w-100">
-                        <el-option :value="1" label="议论文" />
-                        <el-option :value="2" label="说明文" />
-                        <el-option :value="3" label="短篇小说" />
-                        <el-option :value="4" label="叙事文" />
-                        <el-option :value="5" label="描写文" />
-                        <el-option :value="6" label="商业报告" />
-                        <el-option :value="7" label="技术报告" />
-                        <el-option :value="8" label="新闻报道" />
-                        <el-option :value="9" label="社论" />
-                        <el-option :value="10" label="博客文章" />
-                        <el-option :value="11" label="社交媒体文案" />
+                      <el-select v-model="config.article_type" placeholder="选择类型" class="w-100">
+                        <el-option
+                          v-for="option in articleTypeOptions"
+                          :key="option.value"
+                          :label="option.label"
+                          :value="option.value"
+                        />
                       </el-select>
                     </el-form-item>
                     
-                    <el-form-item label="字数范围">
-                      <el-input v-model="config.wordNum" placeholder="如：100-200">
-                        <template #prefix>
-                          <el-icon><Document /></el-icon>
-                        </template>
-                      </el-input>
+                    <el-form-item label="难度级别">
+                      <el-select v-model="config.difficulty_level" placeholder="选择难度" class="w-100">
+                        <el-option
+                          v-for="option in difficultyLevelOptions"
+                          :key="option.value"
+                          :label="option.label"
+                          :value="option.value"
+                        />
+                      </el-select>
                     </el-form-item>
+                    
+                    <el-form-item label="文章长度">
+                      <el-select v-model="config.article_length" placeholder="选择长度" class="w-100">
+                        <el-option
+                          v-for="option in articleLengthOptions"
+                          :key="option.value"
+                          :label="option.label"
+                          :value="option.value"
+                        />
+                      </el-select>
+                    </el-form-item>
+                    
+                    <el-form-item v-if="showCustomWordCount" label="自定义字数">
+                      <el-input-number 
+                        v-model="config.custom_word_count" 
+                        :min="50" 
+                        :max="2000" 
+                        :step="50"
+                        class="w-100"
+                      />
+                    </el-form-item>
+                    
+                    <!-- 高级配置展开/折叠区域 -->
+                    <el-divider content-position="center">
+                      <el-button 
+                        type="text" 
+                        @click="showAdvancedSettings = !showAdvancedSettings"
+                        class="toggle-advanced-btn"
+                      >
+                        {{ showAdvancedSettings ? '收起高级设置' : '展开高级设置' }}
+                        <el-icon>
+                          <component :is="showAdvancedSettings ? 'ArrowUp' : 'ArrowDown'" />
+                        </el-icon>
+                      </el-button>
+                    </el-divider>
+                    
+                    <div v-show="showAdvancedSettings" class="advanced-settings">
+                      <el-form-item label="语气风格">
+                        <el-select v-model="config.tone_style" placeholder="选择风格" class="w-100">
+                          <el-option
+                            v-for="option in toneStyleOptions"
+                            :key="option.value"
+                            :label="option.label"
+                            :value="option.value"
+                          />
+                        </el-select>
+                      </el-form-item>
+                      
+                      <el-form-item label="主题领域">
+                        <el-select v-model="config.topic" placeholder="选择主题" class="w-100">
+                          <el-option
+                            v-for="option in topicOptions"
+                            :key="option.value"
+                            :label="option.label"
+                            :value="option.value"
+                          />
+                        </el-select>
+                      </el-form-item>
+                      
+                      <el-form-item label="句子复杂度">
+                        <el-slider 
+                          v-model="config.sentence_complexity" 
+                          :min="0" 
+                          :max="1" 
+                          :step="0.1"
+                          :format-tooltip="(value: number) => `${Math.round(value * 100)}%`"
+                          show-stops
+                        />
+                        <div class="slider-labels">
+                          <span>简单</span>
+                          <span>复杂</span>
+                        </div>
+                      </el-form-item>
+                    </div>
                     
                     <el-form-item>
                       <el-button 
@@ -948,5 +1105,48 @@ const viewHistory = () => {
   .divider-content {
     font-size: 13px;
   }
+}
+
+.toggle-advanced-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #409EFF;
+  font-size: 14px;
+}
+
+.advanced-settings {
+  background-color: #f9f9f9;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  border: 1px solid #ebeef5;
+  transition: all 0.3s;
+}
+
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 5px;
+  color: #909399;
+  font-size: 12px;
+}
+
+/* 控制高级设置的动画 */
+.advanced-settings-enter-active,
+.advanced-settings-leave-active {
+  transition: all 0.3s ease;
+  max-height: 500px;
+  overflow: hidden;
+}
+
+.advanced-settings-enter-from,
+.advanced-settings-leave-to {
+  max-height: 0;
+  opacity: 0;
+  margin: 0;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 </style>
