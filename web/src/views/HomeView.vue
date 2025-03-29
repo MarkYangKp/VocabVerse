@@ -10,17 +10,37 @@ import { saveLearningRecord } from '@/utils/localStorageUtils'
 
 // 定义类型
 interface GenerationConfig {
-  passageNeeds: number // 难度类型，1-考研难度，2-六级难度，等
-  passageType: number // 文章类型，1-议论文，2-说明文，等
-  wordNum: string // 词数范围，如"150-200"
+  // 兼容旧参数
+  passageNeeds: number
+  passageType: number
+  wordNum: string
+  
+  // 新API参数
+  article_type: string
+  difficulty_level: string
+  tone_style: string
+  article_length: string
+  topic: string
+  custom_word_count: number
+  sentence_complexity: number
 }
 
 // 定义响应式状态
 const wordList = ref<string[]>([])
 const config = reactive<GenerationConfig>({
+  // 兼容旧参数
   passageNeeds: 2, // 默认六级难度
   passageType: 1, // 默认议论文
-  wordNum: '150-200' // 默认词数范围
+  wordNum: '150-200', // 默认词数范围
+  
+  // 新API参数
+  article_type: 'argumentative', // 默认议论文
+  difficulty_level: 'cet6', // 默认六级难度
+  tone_style: 'formal', // 默认正式语气
+  article_length: 'medium', // 默认中等长度
+  topic: 'general', // 默认主题
+  custom_word_count: 300, // 自定义词数，默认300
+  sentence_complexity: 0.6 // 句子复杂度，默认0.6
 })
 
 // 文章状态
@@ -41,8 +61,8 @@ const onWordsUpdated = (words: string[]) => {
 //环境变量中的API基础路径
 const baseApiUrl = import.meta.env.VITE_API_BASE_URL
 
-// API基础路径
-const apiUrl = baseApiUrl+'/api/learning';
+// API基础路径 - 更新为新的API路径
+const apiUrl = baseApiUrl ? baseApiUrl + '/v1/api/learning' : 'http://localhost:9988/v1/api/learning';
 
 // 优化视觉反馈
 const isGenerating = ref(false)
@@ -59,17 +79,31 @@ const generateArticle = async () => {
   loadingText.value = '正在生成文章，请稍候...'
 
   try {
+    // 构建请求体，同时支持新旧API参数
+    const requestBody = {
+      words: wordList.value,
+      // 新API参数
+      article_type: config.article_type,
+      difficulty_level: config.difficulty_level,
+      tone_style: config.tone_style,
+      article_length: config.article_length,
+      topic: config.topic,
+      sentence_complexity: config.sentence_complexity,
+      // 当选择自定义长度时使用
+      custom_word_count: config.article_length === 'custom' ? config.custom_word_count : undefined,
+      
+      // 兼容旧API参数
+      passage_needs: config.passageNeeds,
+      passage_type: config.passageType,
+      word_num: config.wordNum
+    };
+
     const response = await fetch(`${apiUrl}/word2passage`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        words: wordList.value,
-        passage_needs: config.passageNeeds,
-        passage_type: config.passageType,
-        word_num: config.wordNum
-      })
+      body: JSON.stringify(requestBody)
     });
 
     if (!response.ok) {
@@ -112,7 +146,7 @@ const generateArticle = async () => {
   }
 }
 
-// 获取翻译和解释
+// 获取翻译和解释 - 更新为新API格式
 const getTranslation = async () => {
   if (!articleGenerated.value) return;
 
@@ -170,7 +204,7 @@ const getTranslation = async () => {
   }
 }
 
-// 获取习题
+// 获取习题 - 更新为新API格式
 const getQuestions = async () => {
   if (!articleGenerated.value) return;
 
@@ -228,6 +262,44 @@ const getQuestions = async () => {
       loading.close();
     }
   }
+}
+
+// 辅助函数：旧参数映射到新参数（用于UI展示）
+const mapPassageNeedsToNewFormat = (passageNeeds: number): string => {
+  const needsMap: Record<number, string> = {
+    1: 'graduate', // 考研难度
+    2: 'cet6', // 六级难度
+    3: 'memory_friendly', // 易于记忆
+    4: 'cet4', // 四级难度
+    5: 'high_school' // 高中水平
+  }
+  return needsMap[passageNeeds] || 'intermediate'
+}
+
+const mapPassageTypeToNewFormat = (passageType: number): string => {
+  const typeMap: Record<number, string> = {
+    1: 'argumentative', // 议论文
+    2: 'science', // 说明文
+    3: 'short_story', // 短篇小说
+    4: 'narrative', // 叙事文
+    5: 'descriptive', // 描写文
+    6: 'business', // 商业报告
+    7: 'technical', // 技术报告
+    8: 'news', // 新闻报道
+    9: 'editorial', // 社论
+    10: 'blog', // 博客文章
+    11: 'social_media' // 社交媒体文案
+  }
+  return typeMap[passageType] || 'general'
+}
+
+// 辅助函数：同步旧参数与新参数
+const syncPassageNeeds = (passageNeeds: number) => {
+  config.difficulty_level = mapPassageNeedsToNewFormat(passageNeeds)
+}
+
+const syncPassageType = (passageType: number) => {
+  config.article_type = mapPassageTypeToNewFormat(passageType)
 }
 
 // 辅助函数：获取难度文本描述

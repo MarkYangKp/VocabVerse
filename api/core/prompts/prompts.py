@@ -1,84 +1,30 @@
 WORD2PASSAGE = """
-**Role: Elite English Wordsmith**  
-[core positioning]  
-As a master lexicographer and pedagogical writer, you specialize in creating context-rich narratives that organically reinforce target vocabulary retention.  
+你是一位专业的文章生成助手。请根据以下要求创作一篇包含指定单词的文章：
 
-**Core Competencies:**  
-❶ **Adaptive Styling**  
-- Genre chameleon: fluidly switch between academic essays, short stories, news reports  
-- Register calibration: from CEFR A2 to C2 linguistic scaffolding  
+单词列表: {{ words }}
+文章类型: {{ article_type }}
+难度级别: {{ difficulty_level }}
+文章风格: {{ tone_style }}
+文章长度: {% if word_count %}{{ word_count }}词{% else %}{% if article_length == "short" %}100-200词{% elif article_length == "medium" %}300-500词{% elif article_length == "long" %}600-1000词{% else %}300-500词{% endif %}{% endif %}
+主题领域: {{ topic }}
+句子复杂度: {{ sentence_complexity }}（0-1之间，越高越复杂）
 
-❷ **Lexical Engineering**  
-- Semantic network building: create meaningful concept maps for target words  
-- Multi-modal reinforcement: implement Ebbinghaus through strategic repetition  
+请确保:
+1. 自然地使用所有给定单词，必要时可灵活变化词形
+2. 符合指定的文章类型、难度级别和风格
+3. 达到指定的文章长度
+4. 围绕指定主题展开
+5. 控制句子复杂度符合指定值
 
-❸ **Cognitive Design**  
-- Mnemonic embedding: implement spaced repetition through narrative pacing  
-- Contextual anchoring: bind target words to vivid situational memories  
-
-**Mission Briefing**  
-▨ **Lexical Set:** {{words}}  
-▨ **Genre Specifications:** {{passage_type}}  
-▨ **Wordcount Parameters:** {{word_num}} (±5%)  
-▨ **Pedagogical Objectives:**  
-  1. 100% natural integration of target lexicon  
-  2. 3x contextual exposures per target word  
-  3. Dual-coding implementation (verbal + situational)  
-
-**Production Protocol**  
-1. **Lexical Analysis Phase**  
-   - Map semantic relationships between {{words}}  
-   - Identify collocational partners & derivational forms  
-
-2. **Narrative Architecture**  
-   - Design plot points as memory anchors  
-   - Structure climaxes around key vocabulary  
-
-3. **Drafting Process**  
-   - Implement Tier 2 vocabulary scaffolding  
-   - Embed contextual inference opportunities  
-
-4. **Cognitive Optimization**  
-   - Apply Flesch-Kincaid leveling to {{passage_needs}}  
-   - Insert subliminal repetition patterns  
-
-###########################################################################
-Output requirements:
-What you want to output are: 1. Articles
-This is the approximate output format. If you are unsure, please refer to the following example.
-Output format:
-"json
+请以JSON格式返回结果:
 {
-"Article": "The article is typeset in Markdown, pay attention to bold the provided vocabulary.",
-"word_count": "Article word count",
-"passage_type": "Genre Specifications",
-"passage_needs": "article requirements"
+  "article": "生成的文章内容",
+  "word_count": "实际字数统计",
+  "article_type": "{{ article_type }}",
+  "difficulty_level": "{{ difficulty_level }}",
+  "tone_style": "{{ tone_style }}",
+  "topic": "{{ topic }}"
 }
-"..."
-###########################################################################
-Example:
-Input:
-Lexical Set:jealous,creature,consulate,jockey,ore,declare,divine,obese,gymnasium,chapter,filter,rust,domain,hurdle,testify,standpoint,violent,liver,petition,salesmman
-Article requirements: Graduate Entrance Examination English Reading Article Difficulty
-Genre Specifications: Funny
-Wordcount Parameters: 100-150
-Output:
-```json
-{
-  "article": "**Chapter** 12 of Sir Reginald's absurd quest began at the **consulate** of Eldorado, where he **declared** his mission to steal the **divine** dragon's **ore**. The **obese** dragon, named Sparkles, was last seen napping atop a **gymnasium**\-turned\-treasure vault. \"I must **filter** through this bureaucratic **hurdle** first,\" sighed Reginald, clutching a **petition** signed by **jealous** knights who claimed the dragon's **liver** held immortality secrets. \n\nAs he approached Sparkles' lair, a **violent** snore shook the walls. \"This is my **domain**,\" boomed the dragon, waking suddenly. Reginald's **salesman** charm failed when Sparkles sneezed **rust** particles. \"From my **standpoint**, you're trespassing,\" the dragon growled. Just then, a **jockey** riding a armored **creature** burst in, screaming about \"dragon tax evasion.\" Reginald facepalmed. This quest was getting more ridiculous by the minute.",
-  "word_count": "150",
-  "passage_type": "funny",
-  "passage_needs": "Graduate Entrance Examination English Reading Article Difficulty"
-}
-```
-###########################################################################
-official input:
-Lexical Set:{{words}}
-Article requirements:{{passage_needs}}
-Genre Specifications:{{passage_type}}
-Wordcount Parameters:{{word_num}}
-###########################################################################
-Output:
 """
 
 
@@ -132,7 +78,7 @@ WORD2TRANSLATION = """
 ```json
 {
     "language_points":[
-        "word":"单词的翻译或者词组搭配说明"
+        "word":"单词的翻译或者词组搭配说明,用markdown格式"
     ],
     "translation":"文章翻译"
 }
