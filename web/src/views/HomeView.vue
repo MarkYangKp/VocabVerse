@@ -31,7 +31,7 @@ const config = reactive<GenerationConfig>({
   // 兼容旧参数
   passageNeeds: 2, // 默认六级难度
   passageType: 1, // 默认议论文
-  wordNum: '150-200', // 默认词数范围
+  wordNum: '300', // 修改为单一数字格式，不使用范围表示
   
   // 新API参数
   article_type: 'argumentative', // 默认议论文
@@ -64,8 +64,8 @@ const onWordsUpdated = (words: string[]) => {
 //环境变量中的API基础路径
 const baseApiUrl = import.meta.env.VITE_API_BASE_URL
 
-// API基础路径 - 更新为新的API路径
-const apiUrl = baseApiUrl ? baseApiUrl + '/v1/api/learning' : 'http://localhost:9988/v1/api/learning';
+// API基础路径 - 需要调整为正确的路径格式
+const apiUrl = baseApiUrl || 'http://localhost:9988/v1';
 
 // 优化视觉反馈
 const isGenerating = ref(false)
@@ -173,7 +173,7 @@ const generateArticle = async () => {
   loadingText.value = '正在生成文章，请稍候...'
 
   try {
-    // 构建请求体，同时支持新旧API参数
+    // 构建请求体，仅使用新API参数，不包含已弃用的旧参数
     const requestBody = {
       words: wordList.value,
       // 新API参数
@@ -184,15 +184,10 @@ const generateArticle = async () => {
       topic: config.topic,
       sentence_complexity: config.sentence_complexity,
       // 当选择自定义长度时使用
-      custom_word_count: config.article_length === 'custom' ? config.custom_word_count : undefined,
-      
-      // 兼容旧API参数
-      passage_needs: config.passageNeeds,
-      passage_type: config.passageType,
-      word_num: config.wordNum
+      custom_word_count: config.article_length === 'custom' ? config.custom_word_count : undefined
     };
 
-    const response = await fetch(`${apiUrl}/word2passage`, {
+    const response = await fetch(`${apiUrl}/api/learning/word2passage`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -232,7 +227,12 @@ const generateArticle = async () => {
 
   } catch (error) {
     console.error('生成文章失败:', error);
-    ElMessage.error('生成文章失败，请稍后再试');
+    // 提供更详细的错误信息
+    if (error instanceof Error) {
+      ElMessage.error(`生成文章失败: ${error.message}`);
+    } else {
+      ElMessage.error('生成文章失败，请稍后再试');
+    }
   } finally {
     setTimeout(() => {
       isGenerating.value = false;
@@ -257,7 +257,7 @@ const getTranslation = async () => {
   }
 
   try {
-    const response = await fetch(`${apiUrl}/passage2explanation`, {
+    const response = await fetch(`${apiUrl}/api/learning/passage2explanation`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -315,7 +315,7 @@ const getQuestions = async () => {
   }
 
   try {
-    const response = await fetch(`${apiUrl}/passage2question`, {
+    const response = await fetch(`${apiUrl}/api/learning/passage2question`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
