@@ -3,9 +3,98 @@ import { ref, watch, computed } from 'vue'
 import { marked } from 'marked'
 import { ElMessage } from 'element-plus'
 
+// 定义接口类型
+interface ArticleData {
+  article?: string;
+  difficulty_level?: string;
+  article_type?: string;
+  tone_style?: string;
+  topic?: string;
+  word_count?: number;
+  sentence_complexity?: number;
+  passage_needs?: string; // 旧API
+  passage_type?: string;  // 旧API
+  alert?: string;
+  [key: string]: any;     // 允许其他属性
+}
+
+// 定义映射类型
+type DifficultyMapType = {
+  [key: string]: string;
+  a1: string;
+  a2: string;
+  b1: string;
+  b2: string;
+  c1: string;
+  c2: string;
+  easy: string;
+  intermediate: string;
+  advanced: string;
+  high_school: string;
+  cet4: string;
+  cet6: string;
+  graduate: string;
+  memory_friendly: string;
+}
+
+type ArticleTypeMapType = {
+  [key: string]: string;
+  news: string;
+  short_story: string;
+  science: string;
+  blog: string;
+  academic: string;
+  email: string;
+  dialogue: string;
+  argumentative: string;
+  narrative: string;
+  descriptive: string;
+  business: string;
+  technical: string;
+  editorial: string;
+  social_media: string;
+}
+
+type ToneStyleMapType = {
+  [key: string]: string;
+  formal: string;
+  semi_formal: string;
+  informal: string;
+  humorous: string;
+  academic: string;
+  business: string;
+  conversational: string;
+  technical: string;
+  professional: string;
+}
+
+type TopicMapType = {
+  [key: string]: string;
+  general: string;
+  technology: string;
+  business: string;
+  health: string;
+  science: string;
+  education: string;
+  environment: string;
+  entertainment: string;
+  sports: string;
+  politics: string;
+  culture: string;
+  history: string;
+  travel: string;
+  food: string;
+  fashion: string;
+  art: string;
+  literature: string;
+  economics: string;
+  philosophy: string;
+  psychology: string;
+}
+
 const props = defineProps({
   articleData: {
-    type: Object,
+    type: Object as () => ArticleData | null,
     default: null
   }
 })
@@ -36,7 +125,7 @@ const copyArticle = () => {
 }
 
 // 获取中文名称的映射
-const difficultyMap = computed(() => {
+const difficultyMap = computed((): DifficultyMapType => {
   return {
     'a1': 'CEFR A1 (初级)',
     'a2': 'CEFR A2',
@@ -55,7 +144,7 @@ const difficultyMap = computed(() => {
   }
 })
 
-const articleTypeMap = computed(() => {
+const articleTypeMap = computed((): ArticleTypeMapType => {
   return {
     'news': '新闻',
     'short_story': '短篇故事',
@@ -74,7 +163,7 @@ const articleTypeMap = computed(() => {
   }
 })
 
-const toneStyleMap = computed(() => {
+const toneStyleMap = computed((): ToneStyleMapType => {
   return {
     'formal': '正式',
     'semi_formal': '半正式',
@@ -88,7 +177,7 @@ const toneStyleMap = computed(() => {
   }
 })
 
-const topicMap = computed(() => {
+const topicMap = computed((): TopicMapType => {
   return {
     'general': '一般/通用',
     'technology': '科技',
@@ -119,7 +208,8 @@ const getDifficultyText = computed(() => {
   
   // 使用新的difficulty_level参数
   if (props.articleData.difficulty_level) {
-    return difficultyMap.value[props.articleData.difficulty_level] || props.articleData.difficulty_level
+    const key = props.articleData.difficulty_level as string
+    return difficultyMap.value[key] || key
   }
   
   // 兼容旧参数
@@ -131,7 +221,8 @@ const getArticleTypeText = computed(() => {
   
   // 使用新的article_type参数
   if (props.articleData.article_type) {
-    return articleTypeMap.value[props.articleData.article_type] || props.articleData.article_type
+    const key = props.articleData.article_type as string
+    return articleTypeMap.value[key] || key
   }
   
   // 兼容旧参数
@@ -140,12 +231,14 @@ const getArticleTypeText = computed(() => {
 
 const getToneStyleText = computed(() => {
   if (!props.articleData || !props.articleData.tone_style) return '未指定'
-  return toneStyleMap.value[props.articleData.tone_style] || props.articleData.tone_style
+  const key = props.articleData.tone_style as string
+  return toneStyleMap.value[key] || key
 })
 
 const getTopicText = computed(() => {
   if (!props.articleData || !props.articleData.topic) return '未指定'
-  return topicMap.value[props.articleData.topic] || props.articleData.topic
+  const key = props.articleData.topic as string
+  return topicMap.value[key] || key
 })
 
 const toggleParamsDisplay = () => {

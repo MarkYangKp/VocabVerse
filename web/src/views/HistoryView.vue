@@ -129,9 +129,14 @@ const confirmClearAllRecords = () => {
 }
 
 // 获取难度文本描述
-const getPassageNeedsText = (passageNeeds: number | string): string => {
+const getPassageNeedsText = (passageNeeds: number | string | undefined): string => {
+  // 如果未定义，返回默认值
+  if (passageNeeds === undefined) {
+    return '未知难度';
+  }
+  
   // 将输入转换为数字类型
-  const needsNumber = Number(passageNeeds)
+  const needsNumber = Number(passageNeeds);
   const needsMap: Record<number, string> = {
     1: '考研难度',
     2: '六级难度',
@@ -139,13 +144,18 @@ const getPassageNeedsText = (passageNeeds: number | string): string => {
     4: '四级难度',
     5: '高中水平'
   }
-  return needsMap[needsNumber] || '未知难度'
+  return needsMap[needsNumber] || '未知难度';
 }
 
 // 获取文章类型文本描述
-const getPassageTypeText = (passageType: number | string): string => {
+const getPassageTypeText = (passageType: number | string | undefined): string => {
+  // 如果未定义，返回默认值
+  if (passageType === undefined) {
+    return '未知类型';
+  }
+  
   // 将输入转换为数字类型
-  const typeNumber = Number(passageType)
+  const typeNumber = Number(passageType);
   const typeMap: Record<number, string> = {
     1: '议论文',
     2: '说明文',
@@ -159,7 +169,7 @@ const getPassageTypeText = (passageType: number | string): string => {
     10: '博客文章',
     11: '社交媒体文案'
   }
-  return typeMap[typeNumber] || '未知类型'
+  return typeMap[typeNumber] || '未知类型';
 }
 
 // 返回首页

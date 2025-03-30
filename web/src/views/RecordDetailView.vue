@@ -114,6 +114,35 @@ const pageTitle = computed(() => {
   return `学习记录 - ${formatDate(record.value.timestamp)}`
 })
 
+// 转换记录中的文章数据，确保类型兼容
+const compatibleArticleData = computed(() => {
+  if (!record.value || !record.value.article) return null
+  
+  const article = record.value.article
+  
+  // 创建一个新对象，确保类型兼容
+  return {
+    record_id: article.record_id,
+    article_type: article.article_type || undefined,
+    difficulty_level: article.difficulty_level || undefined,
+    tone_style: article.tone_style,
+    topic: article.topic,
+    sentence_complexity: article.sentence_complexity,
+    word_count: article.word_count,
+    article: article.article,
+    // 使用类型断言解决title属性的类型问题
+    title: (article as any).title,
+    alert: article.alert,
+    // 若原始类型为数字，转换为字符串
+    passage_needs: article.passage_needs !== undefined 
+      ? String(article.passage_needs) 
+      : undefined,
+    passage_type: article.passage_type !== undefined 
+      ? String(article.passage_type) 
+      : undefined
+  }
+})
+
 // 加载记录详情
 const loadRecord = () => {
   if (!recordId.value) {
@@ -234,7 +263,7 @@ onMounted(() => {
             >
               <el-tab-pane label="文章阅读" name="article">
                 <div class="tab-content-wrapper">
-                  <ArticleDisplay :article-data="record.article" />
+                  <ArticleDisplay :article-data="compatibleArticleData" />
                 </div>
               </el-tab-pane>
               
