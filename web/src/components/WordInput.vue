@@ -53,7 +53,7 @@ const addWords = () => {
 const baseApiUrl = import.meta.env.VITE_API_BASE_URL
 
 // API基础路径
-const apiUrl = baseApiUrl + '/api/learning';
+const apiUrl = baseApiUrl || 'http://localhost:9988/v1';
 
 // 上传图片并识别单词
 const uploadImage = (file: File) => {
@@ -87,8 +87,8 @@ const uploadImage = (file: File) => {
   const formData = new FormData()
   formData.append('image', file)
   
-  // 发送API请求
-  fetch(`${apiUrl}/upload_image`, {
+  // 发送API请求，使用正确的API路径
+  fetch(`${apiUrl}/api/learning/upload_image`, {
     method: 'POST',
     body: formData
   })
