@@ -190,7 +190,7 @@ onMounted(() => {
             <h2>学习历史记录</h2>
           </div>
           <div class="header-right">
-            <el-button type="primary" plain @click="goBack">
+            <el-button type="primary" plain round @click="goBack">
               <el-icon><Back /></el-icon>
               返回主页
             </el-button>
@@ -425,7 +425,7 @@ onMounted(() => {
 .history-header {
   padding: 0;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  background: linear-gradient(90deg, #3a7bd5 0%, #00d2ff 100%);
+  background: linear-gradient(90deg, #409EFF 0%, #53a8ff 100%);
   position: relative;
   overflow: hidden;
 }
