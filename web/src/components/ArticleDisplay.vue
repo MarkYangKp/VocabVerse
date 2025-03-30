@@ -113,11 +113,11 @@ const topicMap = computed(() => {
   }
 })
 
-// 获取参数值，支持新旧API格式
+// 获取参数值，支持新API格式
 const getDifficultyText = computed(() => {
   if (!props.articleData) return '未知难度'
   
-  // 优先使用新参数
+  // 使用新的difficulty_level参数
   if (props.articleData.difficulty_level) {
     return difficultyMap.value[props.articleData.difficulty_level] || props.articleData.difficulty_level
   }
@@ -129,7 +129,7 @@ const getDifficultyText = computed(() => {
 const getArticleTypeText = computed(() => {
   if (!props.articleData) return '未知类型'
   
-  // 优先使用新参数
+  // 使用新的article_type参数
   if (props.articleData.article_type) {
     return articleTypeMap.value[props.articleData.article_type] || props.articleData.article_type
   }
