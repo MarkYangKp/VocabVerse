@@ -18,7 +18,7 @@ WORD2PASSAGE = """
 
 请以JSON格式返回结果:
 {
-  "article": "生成的文章内容",
+  "article": "生成的文章内容, markdown格式,对给出单词加粗体处理",
   "word_count": "实际字数统计",
   "article_type": "{{ article_type }}",
   "difficulty_level": "{{ difficulty_level }}",
