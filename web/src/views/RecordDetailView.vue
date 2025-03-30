@@ -270,7 +270,7 @@ onMounted(() => {
         <div class="footer-content">
           <p>
             <el-icon><Connection /></el-icon>
-            词境 Word2LLM - 使用AI增强英语学习体验
+            词境 - 使用AI增强英语学习体验
           </p>
         </div>
       </el-footer>
