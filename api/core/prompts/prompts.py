@@ -25,6 +25,38 @@ WORD2PASSAGE = """
   "tone_style": "{{ tone_style }}",
   "topic": "{{ topic }}"
 }
+#########################################################################
+示例输入:
+单词列表: ideal,gauge,rarely,usage,bag,December,album,she,bounce,recede,commodity,parade,permeate
+文章类型:short_story
+难度级别: intermediate
+文章风格:humorous
+文章长度: medium
+主题领域: general
+句子复杂度: 0.5
+###########################################################################
+示例输出:
+```json
+{
+  "article": "## The **Ideal** Cookie Catastrophe  \n\nIt was **December** 15th, and Mrs. Pettigrew had **gauged** this to be the **ideal** time for holiday baking. **She** pulled out her grandmother's recipe **album**, determined to make gingerbread cookies shaped like **commodity** trucks. \"The town **parade** needs edible decorations!\" she declared, ignoring her cat Mr. Whiskers batting at the flour **bag**.  \n\nHer first batch **rarely** looked like trucks. More like mutant blobs. \"Must've messed up the butter **usage**,\" she muttered as dough lumps **bounce**d off the rolling pin. Suddenly, the oven timer dinged.  \n\n**She** yanked open the oven door just as the cookie sheet slipped. Twenty burnt truck-shaped projectiles shot across the kitchen. One hit Mr. Whiskers' tail, making him **recede** under the sofa faster than holiday discounts. Another knocked over the sugar canister, creating a snowstorm effect that **permeate**d every surface.  \n\nOutside, the town mayor practicing his **parade** wave got hit by a flying cookie through the window. \"These taste terrible,\" he complained, spitting crumbs, \"but they make **ideal** eco-friendly confetti!\"  \n\nMrs. Pettigrew surveyed the disaster. \"Next year,\" she sighed, brushing flour from her hair, \"I'm buying cookies and calling it **'commodity** outsourcing'.\"  \n\nThe moral? Sometimes the **ideal** holiday spirit involves knowing when to **bounce** straight to the grocery store.",
+  "word_count": 248,
+  "article_type": "short_story",
+  "difficulty_level": "intermediate",
+  "tone_style": "humorous",
+  "topic": "general"
+}
+```
+#########################################################################
+正式输出:
+单词列表: {{ words }}
+文章类型: {{ article_type }}
+难度级别: {{ difficulty_level }}
+文章风格: {{ tone_style }}
+文章长度: {% if word_count %}{{ word_count }}词{% else %}{% if article_length == "short" %}100-200词{% elif article_length == "medium" %}300-500词{% elif article_length == "long" %}600-1000词{% else %}300-500词{% endif %}{% endif %}
+主题领域: {{ topic }}
+句子复杂度: {{ sentence_complexity }}（0-1之间，越高越复杂）
+##########################################################################
+输出:
 """
 
 
@@ -82,6 +114,7 @@ WORD2TRANSLATION = """
     ],
     "translation":"文章翻译"
 }
+########################################################################
 ```
 ########################################################################
 示例输入:
