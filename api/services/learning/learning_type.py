@@ -89,20 +89,13 @@ class TopicArea(str, Enum):
 # 请求模型
 class Word2PassageRequest(BaseModel):
     words: conlist(str, max_length=50)  # 限制最多50个单词
-    # 保留旧参数，但标记为已弃用
-    passage_needs: Optional[int] = Field(None, ge=1, le=5)  # 限制范围1-5
-    passage_type: Optional[int] = Field(None, ge=1, le=11)  # 限制范围1-11
-    word_num: Optional[str] = None
-    
-    # 新参数
-    article_type: Optional[ArticleType] = Field(default=None, description="文章类型")
-    difficulty_level: Optional[DifficultyLevel] = Field(default=None, description="难度级别")
-    tone_style: Optional[ToneStyle] = Field(default=None, description="文体与语气")
-    article_length: Optional[ArticleLength] = Field(default=None, description="文章长度")
-    # 修改topic为枚举类型
-    topic: Optional[TopicArea] = Field(default=None, description="主题或领域")
+    article_type: ArticleType = Field(..., description="文章类型")
+    difficulty_level: DifficultyLevel = Field(..., description="难度级别")
+    tone_style: ToneStyle = Field(..., description="文体与语气")
+    article_length: ArticleLength = Field(..., description="文章长度")
+    topic: TopicArea = Field(..., description="主题或领域")
     custom_word_count: Optional[int] = Field(default=None, ge=50, le=2000, description="自定义字数(当article_length为CUSTOM时使用)")
-    sentence_complexity: Optional[float] = Field(default=None, ge=0.0, le=1.0, description="句子复杂度(0.0-1.0)")
+    sentence_complexity: float = Field(default=0.5, ge=0.0, le=1.0, description="句子复杂度(0.0-1.0)")
     
     # 验证器
     @validator('words')
@@ -111,19 +104,11 @@ class Word2PassageRequest(BaseModel):
             raise ValueError('单词列表不能为空')
         return v
     
-    # 移除topic_safe验证器，因为使用枚举类型后不再需要
-    
-    @validator('word_num')
-    def word_num_safe(cls, v):
-        if v is not None:
-            # 如果是数字，确保在合理范围内
-            if v.isdigit():
-                num = int(v)
-                if num < 50 or num > 2000:
-                    raise ValueError('文章字数应在50-2000之间')
-            # 如果不是数字，确保是合法的字符串表示
-            elif v not in ['短', '中', '长', 'short', 'medium', 'long']:
-                raise ValueError('无效的字数值')
+    @validator('custom_word_count')
+    def validate_custom_word_count(cls, v, values):
+        article_length = values.get('article_length')
+        if article_length == ArticleLength.CUSTOM and v is None:
+            raise ValueError('自定义长度文章必须提供字数')
         return v
 
 class Passage2QuestionRequest(BaseModel):

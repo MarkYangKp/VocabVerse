@@ -16,16 +16,13 @@ class WordServices:
     
     def generate_passage(self, 
                          words: List[str], 
-                         passage_needs: Optional[int] = None, 
-                         passage_type: Optional[int] = None, 
-                         word_num: Optional[str] = None,
-                         article_type: Optional[ArticleType] = None,
-                         difficulty_level: Optional[DifficultyLevel] = None,
-                         tone_style: Optional[ToneStyle] = None, 
-                         article_length: Optional[ArticleLength] = None,
-                         topic: Optional[TopicArea] = None,
+                         article_type: ArticleType,
+                         difficulty_level: DifficultyLevel,
+                         tone_style: ToneStyle, 
+                         article_length: ArticleLength,
+                         topic: TopicArea,
                          custom_word_count: Optional[int] = None,
-                         sentence_complexity: Optional[float] = None) -> Dict[str, Any]:
+                         sentence_complexity: float = 0.5) -> Dict[str, Any]:
         """根据单词生成文章"""
         api_logger.info(f"Service: Generating passage with {len(words)} words")
         
@@ -45,111 +42,24 @@ class WordServices:
         
         words_str = ",".join(safe_words)
         
-        # 文章类型映射 - 确保使用枚举值
-        article_type_value = None
-        if article_type:
-            article_type_value = article_type.value
-        elif passage_type and 1 <= passage_type <= 11:
-            # 旧版映射关系
-            passage_type_map = {
-                1: "argumentative", 2: "narrative", 3: "short_story", 4: "descriptive", 5: "descriptive", 
-                6: "business", 7: "technical", 8: "news", 9: "editorial", 10: "blog", 11: "social_media"
-            }
-            article_type_value = passage_type_map.get(passage_type)
-        else:
-            article_type_value = "blog"  # 默认值
+        # 获取枚举值
+        article_type_value = article_type.value
+        difficulty_level_value = difficulty_level.value
+        tone_style_value = tone_style.value
+        topic_value = topic.value
         
-        # 验证映射的值是否在枚举中
-        if article_type_value not in [e.value for e in ArticleType]:
-            article_type_value = "blog"  # 默认回退
-        
-        # 难度级别映射 - 确保使用枚举值
-        difficulty_level_value = None
-        if difficulty_level:
-            difficulty_level_value = difficulty_level.value
-        elif passage_needs and 1 <= passage_needs <= 5:
-            # 旧版映射关系
-            passage_needs_map = {
-                1: "graduate", 2: "cet6", 3: "memory_friendly", 4: "cet4", 5: "high_school"
-            }
-            difficulty_level_value = passage_needs_map.get(passage_needs)
-        else:
-            difficulty_level_value = "intermediate"  # 默认值
-        
-        # 验证映射的值是否在枚举中
-        if difficulty_level_value not in [e.value for e in DifficultyLevel]:
-            difficulty_level_value = "intermediate"  # 默认回退
-            
-        # 文章长度映射
-        length_value = None
+        # 处理文章长度和字数
+        length_value = article_length.value
         word_count = None
-        if article_length:
-            length_value = article_length.value
-            if article_length == ArticleLength.CUSTOM and custom_word_count:
-                # 确保自定义字数在合理范围内
-                if 50 <= custom_word_count <= 2000:
-                    word_count = str(custom_word_count)
-                else:
-                    word_count = "500"  # 默认值
-        elif word_num:
-            # 尝试解析旧版参数
-            if word_num.isdigit():
-                # 确保字数在合理范围内
-                num = int(word_num)
-                if 50 <= num <= 2000:
-                    word_count = word_num
-                    if num <= 200:
-                        length_value = "short"
-                    elif num <= 500:
-                        length_value = "medium"
-                    else:
-                        length_value = "long"
-                else:
-                    length_value = "medium"
-                    word_count = "500"
+        
+        if article_length == ArticleLength.CUSTOM:
+            if custom_word_count and 50 <= custom_word_count <= 2000:
+                word_count = str(custom_word_count)
             else:
-                # 如果是非数字，使用预定义长度
-                length_map = {
-                    "短": "short", "中": "medium", "长": "long",
-                    "short": "short", "medium": "medium", "long": "long"
-                }
-                length_value = length_map.get(word_num, "medium")
-                if length_value == "short":
-                    word_count = "100-200"
-                elif length_value == "medium":
-                    word_count = "300-500"
-                else:
-                    word_count = "600-1000"
-        else:
-            length_value = "medium"
-            word_count = "300-500"
+                word_count = "500"  # 默认值
         
-        # 验证映射的值是否在枚举中
-        if length_value not in [e.value for e in ArticleLength]:
-            length_value = "medium"  # 默认回退
-            
-        # 文体风格 - 确保使用枚举值
-        tone_style_value = tone_style.value if tone_style else "semi_formal"
-        # 验证映射的值是否在枚举中
-        if tone_style_value not in [e.value for e in ToneStyle]:
-            tone_style_value = "semi_formal"  # 默认回退
-        
-        # 主题 - 使用枚举值
-        topic_value = None
-        if topic:
-            topic_value = topic.value
-        else:
-            topic_value = TopicArea.GENERAL.value
-        
-        # 句子复杂度 - 确保在0-1范围内
-        complexity_value = None
-        if sentence_complexity is not None:
-            if 0.0 <= sentence_complexity <= 1.0:
-                complexity_value = str(sentence_complexity)
-            else:
-                complexity_value = "0.5"  # 默认值
-        else:
-            complexity_value = "0.5"  # 默认值
+        # 确保句子复杂度在有效范围内
+        complexity_value = str(max(0.0, min(1.0, sentence_complexity)))
         
         # 准备参数字典
         params = {

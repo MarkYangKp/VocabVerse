@@ -53,9 +53,6 @@ def word2passage(request: Word2PassageRequest):
         
         result = word_service.generate_passage(
             request.words,
-            request.passage_needs,
-            request.passage_type,
-            request.word_num,
             request.article_type,
             request.difficulty_level,
             request.tone_style,
