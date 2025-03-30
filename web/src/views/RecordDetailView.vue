@@ -28,6 +28,86 @@ const formatDate = (timestamp: number) => {
   })
 }
 
+// 获取难度文本描述 - 适配新旧API格式
+const getPassageNeedsText = (record: LearningRecord): string => {
+  if (!record || !record.article) return '未知难度'
+  
+  // 优先使用新参数
+  if (record.article.difficulty_level) {
+    const difficultyMap: Record<string, string> = {
+      'a1': 'CEFR A1 (初级)',
+      'a2': 'CEFR A2',
+      'b1': 'CEFR B1',
+      'b2': 'CEFR B2',
+      'c1': 'CEFR C1',
+      'c2': 'CEFR C2',
+      'easy': '简单',
+      'intermediate': '中等',
+      'advanced': '高级',
+      'high_school': '高中水平',
+      'cet4': '四级难度',
+      'cet6': '六级难度',
+      'graduate': '考研难度',
+      'memory_friendly': '易于记忆'
+    }
+    return difficultyMap[record.article.difficulty_level] || record.article.difficulty_level
+  }
+  
+  // 兼容旧参数
+  const passageNeeds = Number(record.article.passage_needs)
+  const needsMap: Record<number, string> = {
+    1: '考研难度',
+    2: '六级难度',
+    3: '易于记忆',
+    4: '四级难度',
+    5: '高中水平'
+  }
+  return needsMap[passageNeeds] || '未知难度'
+}
+
+// 获取文章类型文本描述 - 适配新旧API格式
+const getPassageTypeText = (record: LearningRecord): string => {
+  if (!record || !record.article) return '未知类型'
+  
+  // 优先使用新参数
+  if (record.article.article_type) {
+    const typeMap: Record<string, string> = {
+      'news': '新闻',
+      'short_story': '短篇故事',
+      'science': '科普文章',
+      'blog': '博客/观点文',
+      'academic': '学术论文',
+      'email': '电子邮件/信件',
+      'dialogue': '对话体',
+      'argumentative': '议论文',
+      'narrative': '叙事文',
+      'descriptive': '描写文',
+      'business': '商业报告',
+      'technical': '技术报告',
+      'editorial': '社论',
+      'social_media': '社交媒体文案'
+    }
+    return typeMap[record.article.article_type] || record.article.article_type
+  }
+  
+  // 兼容旧参数
+  const passageType = Number(record.article.passage_type)
+  const typeMap: Record<number, string> = {
+    1: '议论文',
+    2: '说明文',
+    3: '短篇小说',
+    4: '叙事文',
+    5: '描写文',
+    6: '商业报告',
+    7: '技术报告',
+    8: '新闻报道',
+    9: '社论',
+    10: '博客文章',
+    11: '社交媒体文案'
+  }
+  return typeMap[passageType] || '未知类型'
+}
+
 // 页面标题计算属性
 const pageTitle = computed(() => {
   if (!record.value) return '学习记录详情'
@@ -117,6 +197,12 @@ onMounted(() => {
               </el-descriptions-item>
               <el-descriptions-item label="文章字数">
                 <el-tag type="success" effect="plain">{{ record.article.word_count }} 字</el-tag>
+              </el-descriptions-item>
+              <el-descriptions-item label="文章类型">
+                <el-tag type="success" effect="plain">{{ getPassageTypeText(record) }}</el-tag>
+              </el-descriptions-item>
+              <el-descriptions-item label="难度级别">
+                <el-tag type="primary" effect="plain">{{ getPassageNeedsText(record) }}</el-tag>
               </el-descriptions-item>
             </el-descriptions>
             
