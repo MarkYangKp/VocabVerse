@@ -173,10 +173,9 @@ const generateArticle = async () => {
   loadingText.value = '正在生成文章，请稍候...'
 
   try {
-    // 构建请求体，仅使用新API参数，不包含已弃用的旧参数
+    // 构建请求体，使用新API参数格式
     const requestBody = {
       words: wordList.value,
-      // 新API参数
       article_type: config.article_type,
       difficulty_level: config.difficulty_level,
       tone_style: config.tone_style,
@@ -240,7 +239,7 @@ const generateArticle = async () => {
   }
 }
 
-// 获取翻译和解释 - 更新为新API格式
+// 获取翻译和解释
 const getTranslation = async () => {
   if (!articleGenerated.value) return;
 
@@ -257,6 +256,7 @@ const getTranslation = async () => {
   }
 
   try {
+    // 按照新API规范构建请求
     const response = await fetch(`${apiUrl}/api/learning/passage2explanation`, {
       method: 'POST',
       headers: {
@@ -298,7 +298,7 @@ const getTranslation = async () => {
   }
 }
 
-// 获取习题 - 更新为新API格式
+// 获取习题
 const getQuestions = async () => {
   if (!articleGenerated.value) return;
 
@@ -315,6 +315,7 @@ const getQuestions = async () => {
   }
 
   try {
+    // 按照新API规范构建请求
     const response = await fetch(`${apiUrl}/api/learning/passage2question`, {
       method: 'POST',
       headers: {
