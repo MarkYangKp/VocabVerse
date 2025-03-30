@@ -4,9 +4,15 @@ export interface LearningRecord {
   timestamp: number;
   words: string[];
   article: {
-    record_id: number;
-    passage_needs: number;
-    passage_type: number;
+    record_id?: number;
+    passage_needs?: number;
+    passage_type?: number;
+    // 新API字段
+    article_type?: string;
+    difficulty_level?: string;
+    tone_style?: string; 
+    topic?: string;
+    sentence_complexity?: number;
     word_count: number;
     article: string;
     alert?: string;
