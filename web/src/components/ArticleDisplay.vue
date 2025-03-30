@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { marked } from 'marked'
 import { ElMessage } from 'element-plus'
 
@@ -11,6 +11,7 @@ const props = defineProps({
 })
 
 const articleHtml = ref('')
+const showAllParams = ref(false)
 
 // 将Markdown格式的文章转换为HTML，修改为异步方式
 watch(() => props.articleData, async (newData) => {
@@ -33,33 +34,181 @@ const copyArticle = () => {
       })
   }
 }
+
+// 获取中文名称的映射
+const difficultyMap = computed(() => {
+  return {
+    'a1': 'CEFR A1 (初级)',
+    'a2': 'CEFR A2',
+    'b1': 'CEFR B1',
+    'b2': 'CEFR B2',
+    'c1': 'CEFR C1',
+    'c2': 'CEFR C2',
+    'easy': '简单',
+    'intermediate': '中等',
+    'advanced': '高级',
+    'high_school': '高中水平',
+    'cet4': '四级难度',
+    'cet6': '六级难度',
+    'graduate': '考研难度',
+    'memory_friendly': '易于记忆'
+  }
+})
+
+const articleTypeMap = computed(() => {
+  return {
+    'news': '新闻',
+    'short_story': '短篇故事',
+    'science': '科普文章',
+    'blog': '博客/观点文',
+    'academic': '学术论文',
+    'email': '电子邮件/信件',
+    'dialogue': '对话体',
+    'argumentative': '议论文',
+    'narrative': '叙事文',
+    'descriptive': '描写文',
+    'business': '商业报告',
+    'technical': '技术报告',
+    'editorial': '社论',
+    'social_media': '社交媒体文案'
+  }
+})
+
+const toneStyleMap = computed(() => {
+  return {
+    'formal': '正式',
+    'semi_formal': '半正式',
+    'informal': '非正式/口语化',
+    'humorous': '幽默/轻松',
+    'academic': '学术严谨',
+    'business': '商务',
+    'conversational': '对话式',
+    'technical': '技术性',
+    'professional': '专业'
+  }
+})
+
+const topicMap = computed(() => {
+  return {
+    'general': '一般/通用',
+    'technology': '科技',
+    'business': '商业',
+    'health': '健康',
+    'science': '科学',
+    'education': '教育',
+    'environment': '环境',
+    'entertainment': '娱乐',
+    'sports': '体育',
+    'politics': '政治',
+    'culture': '文化',
+    'history': '历史',
+    'travel': '旅游',
+    'food': '美食',
+    'fashion': '时尚',
+    'art': '艺术',
+    'literature': '文学',
+    'economics': '经济',
+    'philosophy': '哲学',
+    'psychology': '心理学'
+  }
+})
+
+// 获取参数值，支持新旧API格式
+const getDifficultyText = computed(() => {
+  if (!props.articleData) return '未知难度'
+  
+  // 优先使用新参数
+  if (props.articleData.difficulty_level) {
+    return difficultyMap.value[props.articleData.difficulty_level] || props.articleData.difficulty_level
+  }
+  
+  // 兼容旧参数
+  return props.articleData.passage_needs || '未知难度'
+})
+
+const getArticleTypeText = computed(() => {
+  if (!props.articleData) return '未知类型'
+  
+  // 优先使用新参数
+  if (props.articleData.article_type) {
+    return articleTypeMap.value[props.articleData.article_type] || props.articleData.article_type
+  }
+  
+  // 兼容旧参数
+  return props.articleData.passage_type || '未知类型'
+})
+
+const getToneStyleText = computed(() => {
+  if (!props.articleData || !props.articleData.tone_style) return '未指定'
+  return toneStyleMap.value[props.articleData.tone_style] || props.articleData.tone_style
+})
+
+const getTopicText = computed(() => {
+  if (!props.articleData || !props.articleData.topic) return '未指定'
+  return topicMap.value[props.articleData.topic] || props.articleData.topic
+})
+
+const toggleParamsDisplay = () => {
+  showAllParams.value = !showAllParams.value
+}
 </script>
 
 <template>
   <div v-if="articleData" class="article-display">
     <div class="article-header">
       <div class="article-info-card">
+        <!-- 基本信息行 -->
         <div class="info-row">
           <div class="info-item">
             <el-icon><Reading /></el-icon>
             <span class="info-label">难度级别:</span>
-            <span class="info-value">{{ articleData.passage_needs }}</span>
+            <span class="info-value">{{ getDifficultyText }}</span>
           </div>
           <div class="info-item">
             <el-icon><Document /></el-icon>
             <span class="info-label">文章类型:</span>
-            <span class="info-value">{{ articleData.passage_type }}</span>
+            <span class="info-value">{{ getArticleTypeText }}</span>
           </div>
           <div class="info-item">
             <el-icon><DocumentChecked /></el-icon>
             <span class="info-label">字数统计:</span>
             <span class="info-value">{{ articleData.word_count }}</span>
           </div>
+          <div class="toggle-more">
+            <el-button type="text" size="small" @click="toggleParamsDisplay">
+              {{ showAllParams ? '收起参数' : '更多参数' }}
+              <el-icon class="el-icon--right">
+                <component :is="showAllParams ? 'ArrowUp' : 'ArrowDown'" />
+              </el-icon>
+            </el-button>
+          </div>
         </div>
-        <el-button type="primary" size="small" @click="copyArticle" class="copy-btn">
-          <el-icon><CopyDocument /></el-icon>
-          复制文章
-        </el-button>
+        
+        <!-- 扩展信息行 - 仅在showAllParams为true时显示 -->
+        <div v-if="showAllParams" class="extended-info-row">
+          <div class="info-item" v-if="articleData.tone_style">
+            <el-icon><ChatDotRound /></el-icon>
+            <span class="info-label">语气风格:</span>
+            <span class="info-value">{{ getToneStyleText }}</span>
+          </div>
+          <div class="info-item" v-if="articleData.topic">
+            <el-icon><Collection /></el-icon>
+            <span class="info-label">主题领域:</span>
+            <span class="info-value">{{ getTopicText }}</span>
+          </div>
+          <div class="info-item" v-if="articleData.sentence_complexity">
+            <el-icon><Finished /></el-icon>
+            <span class="info-label">句子复杂度:</span>
+            <span class="info-value">{{ Math.round(articleData.sentence_complexity * 100) }}%</span>
+          </div>
+        </div>
+        
+        <div class="button-row">
+          <el-button type="primary" size="small" @click="copyArticle" class="copy-btn">
+            <el-icon><CopyDocument /></el-icon>
+            复制文章
+          </el-button>
+        </div>
       </div>
     </div>
     
@@ -82,7 +231,6 @@ const copyArticle = () => {
 <style scoped>
 .article-display {
   padding: 10px;
-  /* width: 100vw; */
   transition: all 0.3s ease;
 }
 
@@ -92,9 +240,8 @@ const copyArticle = () => {
 
 .article-info-card {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 16px;
   padding: 16px 20px;
   background: linear-gradient(145deg, #f8f9fa, #eef2f8);
   border-radius: 12px;
@@ -107,11 +254,16 @@ const copyArticle = () => {
   transform: translateY(-2px);
 }
 
-.info-row {
+.info-row, .extended-info-row {
   display: flex;
   flex-wrap: wrap;
   gap: 20px;
   align-items: center;
+}
+
+.extended-info-row {
+  padding-top: 8px;
+  border-top: 1px dashed #e4e7ed;
 }
 
 .info-item {
@@ -132,6 +284,15 @@ const copyArticle = () => {
 .info-value {
   color: #409EFF;
   font-weight: 600;
+}
+
+.toggle-more {
+  margin-left: auto;
+}
+
+.button-row {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .copy-btn {
@@ -203,20 +364,26 @@ const copyArticle = () => {
 
 @media (max-width: 768px) {
   .article-info-card {
-    flex-direction: column;
-    gap: 16px;
-    align-items: flex-start;
+    gap: 12px;
     padding: 16px;
   }
   
-  .copy-btn {
-    align-self: flex-end;
-  }
-  
-  .info-row {
+  .info-row, .extended-info-row {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
+    width: 100%;
+  }
+  
+  .toggle-more {
+    margin-left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+  }
+  
+  .button-row {
+    width: 100%;
   }
   
   .article-content-card {
