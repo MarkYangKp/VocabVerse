@@ -177,7 +177,7 @@ def passage2explanation(request: Passage2ExplanationRequest):
 # 上传图片并返回单词
 @router.post("/upload_image", response_model=ImageResponse)
 async def upload_image(
-    image: UploadFile = Depends(validate_image)
+    image: UploadFile = File(...)
 ):
     try:
         # 记录请求

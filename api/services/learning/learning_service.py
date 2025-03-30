@@ -99,6 +99,11 @@ class WordServices:
                 "tone_style": tone_style_value,
                 "topic": topic_value
             }
+        else:
+            # 确保 word_count 是字符串类型
+            if "word_count" in result and not isinstance(result["word_count"], str):
+                result["word_count"] = str(result["word_count"])
+        
         if alert_message:
             result["alert"] = alert_message
         
