@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getAllLearningRecords } from '@/utils/localStorageUtils'
 
@@ -198,16 +198,30 @@ watch(wordList, (newWords) => {
 const historyWordsDialogVisible = ref(false)
 const historySets = ref<{id: string, timestamp: number, words: string[]}[]>([])
 
+// 分页相关变量
+const currentPage = ref(1)
+const pageSize = ref(5)
+const totalHistorySets = computed(() => historySets.value.length)
+const paginatedHistorySets = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return historySets.value.slice(start, end)
+})
+
 // 打开历史单词选择对话框
 const openHistoryDialog = () => {
   // 获取历史单词记录
   const records = getAllLearningRecords()
-  historySets.value = records.map(record => ({
-    id: record.id,
-    timestamp: record.timestamp,
-    words: record.words
-  }))
+  // 按时间降序排序，最新的记录在前面
+  historySets.value = records
+    .map(record => ({
+      id: record.id,
+      timestamp: record.timestamp,
+      words: record.words
+    }))
+    .sort((a, b) => b.timestamp - a.timestamp)
   
+  currentPage.value = 1 // 重置为第一页
   historyWordsDialogVisible.value = true
 }
 
@@ -230,6 +244,11 @@ const importWordsFromHistory = (words: string[]) => {
   
   historyWordsDialogVisible.value = false
   ElMessage.success(`已导入 ${words.length} 个单词`)
+}
+
+// 处理页面改变
+const handlePageChange = (page: number) => {
+  currentPage.value = page
 }
 
 // 格式化日期
@@ -412,38 +431,52 @@ const formatDate = (timestamp: number) => {
       <div v-if="historySets.length === 0" class="empty-history-sets">
         <el-empty description="没有可用的历史单词记录" />
       </div>
-      <div v-else class="history-sets-list">
-        <el-card 
-          v-for="item in historySets"
-          :key="item.id"
-          class="history-set-card"
-          shadow="hover"
-          @click="importWordsFromHistory(item.words)"
-        >
-          <div class="history-set-header">
-            <div class="history-date">{{ formatDate(item.timestamp) }}</div>
-            <el-tag size="small" type="info" effect="plain">{{ item.words.length }}个单词</el-tag>
-          </div>
-          
-          <div class="history-set-words">
-            <el-tag 
-              v-for="(word, index) in item.words.slice(0, 10)" 
-              :key="word+index"
-              size="small"
-              class="word-history-tag"
-            >
-              {{ word }}
-            </el-tag>
-            <el-tag v-if="item.words.length > 10" size="small" type="info">
-              +{{ item.words.length - 10 }} 个单词
-            </el-tag>
-          </div>
-          
-          <div class="click-hint">
-            <el-icon><Right /></el-icon>
-            点击导入这组单词
-          </div>
-        </el-card>
+      <div v-else class="history-sets-container">
+        <div class="history-sets-list">
+          <el-card 
+            v-for="item in paginatedHistorySets"
+            :key="item.id"
+            class="history-set-card"
+            shadow="hover"
+            @click="importWordsFromHistory(item.words)"
+          >
+            <div class="history-set-header">
+              <div class="history-date">{{ formatDate(item.timestamp) }}</div>
+              <el-tag size="small" type="info" effect="plain">{{ item.words.length }}个单词</el-tag>
+            </div>
+            
+            <div class="history-set-words">
+              <el-tag 
+                v-for="(word, index) in item.words.slice(0, 10)" 
+                :key="word+index"
+                size="small"
+                class="word-history-tag"
+              >
+                {{ word }}
+              </el-tag>
+              <el-tag v-if="item.words.length > 10" size="small" type="info">
+                +{{ item.words.length - 10 }} 个单词
+              </el-tag>
+            </div>
+            
+            <div class="click-hint">
+              <el-icon><Right /></el-icon>
+              点击导入这组单词
+            </div>
+          </el-card>
+        </div>
+        
+        <!-- 分页控制器 -->
+        <div class="pagination-container" v-if="totalHistorySets > pageSize">
+          <el-pagination
+            v-model:current-page="currentPage"
+            :page-size="pageSize"
+            :total="totalHistorySets"
+            layout="prev, pager, next"
+            @current-change="handlePageChange"
+            background
+          />
+        </div>
       </div>
     </el-dialog>
   </div>
@@ -712,12 +745,27 @@ const formatDate = (timestamp: number) => {
   border-radius: 8px;
 }
 
+.history-sets-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .history-sets-list {
   display: flex;
   flex-direction: column;
   gap: 16px;
   max-height: 60vh;
   overflow-y: auto;
+  padding-right: 5px;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #ebeef5;
 }
 
 .history-set-card {
@@ -867,6 +915,15 @@ const formatDate = (timestamp: number) => {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
+  }
+  
+  .history-sets-list {
+    max-height: 50vh;
+  }
+  
+  .pagination-container {
+    margin-top: 12px;
+    padding-top: 12px;
   }
 }
 </style>
