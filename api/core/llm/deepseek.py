@@ -30,7 +30,9 @@ class DeepSeek_LLM(LLM):
         self.addHistory_User(content)
         response = self.client.chat.completions.create(
             model=self.model ,
-            messages=self.messages
+            messages=self.messages,
+            temperature=1.5,
+            max_tokens=8192,
         )
         message_content = response.choices[0].message.content
         self.addHistory_Assistant(message_content)
